@@ -14,6 +14,7 @@
     "@supabase/supabase-js": "^2.75.0",
     "axios": "^1.12.2",
     "expo": "~54.0.13",
+    "expo-image-picker": "~16.0.5",
     "expo-secure-store": "^15.0.7",
     "expo-status-bar": "~3.0.8",
     "nativewind": "^4.2.1",

@@ -1,21 +1,50 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView, Alert } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, Alert, Image, ActivityIndicator } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import * as ImagePicker from 'expo-image-picker';
 import { ProfileData, RootStackParamList } from '../../types';
+import { useAuth } from '../../contexts/AuthContext';
+import { uploadProfilePhotoFromUri } from '../../lib/upload';
+import { supabase } from '../../lib/supabase';
 
 type StepProfileNavigationProp = NativeStackNavigationProp<RootStackParamList, 'OnboardingProfile'>;
 
 export default function StepProfile() {
   const navigation = useNavigation<StepProfileNavigationProp>();
+  const { user } = useAuth();
   const [profileData, setProfileData] = useState<ProfileData>({
     displayName: '',
     age: '',
     bio: '',
     phone: '',
   });
+  const [selectedImageUri, setSelectedImageUri] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
-  const handleContinue = () => {
+  const pickImage = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    
+    if (status !== 'granted') {
+      Alert.alert('Permission Required', 'Please grant permission to access your photo library');
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+
+    if (!result.canceled && result.assets[0]) {
+      setSelectedImageUri(result.assets[0].uri);
+      setUploadError(null);
+    }
+  };
+
+  const handleContinue = async () => {
     if (!profileData.displayName.trim()) {
       Alert.alert('Error', 'Please enter your display name');
       return;
@@ -32,7 +61,42 @@ export default function StepProfile() {
       return;
     }
 
-    navigation.navigate('OnboardingCategories', { profileData });
+    if (!user) {
+      Alert.alert('Error', 'No authenticated user found');
+      return;
+    }
+
+    setIsUploading(true);
+    setUploadError(null);
+
+    try {
+      let photoUrl: string | undefined;
+
+      if (selectedImageUri) {
+        photoUrl = await uploadProfilePhotoFromUri(selectedImageUri, user.id);
+      }
+
+      const { error } = await supabase.from('profiles').upsert({
+        id: user.id,
+        display_name: profileData.displayName,
+        bio: profileData.bio || null,
+        age: Number(profileData.age),
+        photo_url: photoUrl || null,
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      const updatedProfileData = { ...profileData, photoUrl };
+      navigation.navigate('OnboardingCategories', { profileData: updatedProfileData });
+    } catch (error: any) {
+      console.error('Error saving profile:', error);
+      setUploadError(error.message || 'Failed to save profile');
+      Alert.alert('Error', error.message || 'Failed to save profile. Please try again.');
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   return (
@@ -104,20 +168,53 @@ export default function StepProfile() {
             />
           </View>
 
-          <TouchableOpacity className="bg-white/10 border border-white/30 border-dashed rounded-2xl py-8 items-center">
-            <Text className="text-white/60 text-sm">📸</Text>
-            <Text className="text-white/60 text-sm mt-2">Upload Photo</Text>
-            <Text className="text-white/40 text-xs mt-1">Coming soon</Text>
+          <TouchableOpacity 
+            className="bg-white/10 border border-white/30 border-dashed rounded-2xl py-8 items-center overflow-hidden"
+            onPress={pickImage}
+            disabled={isUploading}
+          >
+            {selectedImageUri ? (
+              <View className="w-full items-center">
+                <Image 
+                  source={{ uri: selectedImageUri }}
+                  className="w-32 h-32 rounded-2xl mb-3"
+                  resizeMode="cover"
+                />
+                <Text className="text-white/80 text-sm">Tap to change photo</Text>
+              </View>
+            ) : (
+              <View className="items-center">
+                <Text className="text-white/60 text-sm">📸</Text>
+                <Text className="text-white/60 text-sm mt-2">Upload Photo</Text>
+                <Text className="text-white/40 text-xs mt-1">Tap to select</Text>
+              </View>
+            )}
           </TouchableOpacity>
+
+          {uploadError && (
+            <View className="mt-2">
+              <Text className="text-red-400 text-xs text-center">{uploadError}</Text>
+            </View>
+          )}
         </View>
 
         <TouchableOpacity
-          className="bg-blue-500 rounded-2xl py-4"
+          className={`rounded-2xl py-4 ${isUploading ? 'bg-blue-500/50' : 'bg-blue-500'}`}
           onPress={handleContinue}
+          disabled={isUploading}
         >
-          <Text className="text-white text-center text-base font-semibold">
-            Continue
-          </Text>
+          {isUploading ? (
+            <View className="flex-row items-center justify-center">
+              <ActivityIndicator color="#ffffff" size="small" />
+              <Text className="text-white text-center text-base font-semibold ml-2">
+                Saving...
+              </Text>
+            </View>
+          ) : (
+            <Text className="text-white text-center text-base font-semibold">
+              Continue
+            </Text>
+          )}
         </TouchableOpacity>
       </View>
     </ScrollView>

@@ -24,6 +24,7 @@ export type ProfileData = {
   age: string;
   bio: string;
   phone: string;
+  photoUrl?: string;
 };
 
 export type RootStackParamList = {
