@@ -17,7 +17,7 @@ export default function GlassCard({
 }: GlassCardProps) {
   return (
     <View
-      className={`bg-zinc-900/60 backdrop-blur-lg rounded-glass-lg border border-white/20 overflow-hidden shadow-lg ${className || ''}`}
+      className={`bg-zinc-900/90 rounded-glass-lg border border-white/20 overflow-hidden shadow-lg ${className || ''}`}
       {...props}
     >
       {imageUrl && (
@@ -42,11 +42,11 @@ export default function GlassCard({
         )}
         
         {categories.length > 0 && (
-          <View className="flex-row flex-wrap gap-2">
+          <View className="flex-row flex-wrap">
             {categories.map((category, index) => (
               <View
                 key={index}
-                className="bg-teal-400/20 px-3 py-1.5 rounded-full border border-teal-400/30"
+                className="bg-teal-400/20 px-3 py-1.5 rounded-full border border-teal-400/30 mr-2 mb-2"
               >
                 <Text className="text-sm text-teal-400 font-medium">
                   {category}

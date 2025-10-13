@@ -3,6 +3,7 @@ module.exports = {
   content: [
     './App.{js,jsx,ts,tsx}',
     './src/**/*.{js,jsx,ts,tsx}',
+    './index.ts',
   ],
   presets: [require('nativewind/preset')],
   theme: {
@@ -27,7 +28,7 @@ module.exports = {
         system: ['-apple-system', 'BlinkMacSystemFont', 'SF Pro Display', 'system-ui', 'sans-serif'],
       },
       borderRadius: {
-        'glass': '20px',
+        glass: '20px',
         'glass-lg': '24px',
       },
     },

@@ -10,7 +10,7 @@ export default function Home() {
         </Text>
       </View>
       
-      <ScrollView className="flex-1" contentContainerClassName="p-4">
+      <ScrollView className="flex-1 p-4">
         <GlassCard
           title="Alex, 28"
           subtitle="Looking for gym buddies and hiking partners in SF"
