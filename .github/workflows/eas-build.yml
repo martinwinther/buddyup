@@ -50,8 +50,8 @@ jobs:
         run: |
           # Ensure eas-cli is available
           npm install -g eas-cli
-          # Login using token and publish JS bundle to the 'preview' branch
-          eas login --token $EXPO_TOKEN
+          # Use EXPO_TOKEN env var (do not call `eas login --token` in CI)
+          eas whoami || true
           eas update --branch preview --message "CI: OTA update from $GITHUB_SHA" --non-interactive
 
       - name: Build on EAS (Android only)
@@ -63,7 +63,6 @@ jobs:
         run: |
           # Ensure eas-cli is available
           npm install -g eas-cli
-          eas login --token $EXPO_TOKEN
+          # Use EXPO_TOKEN env var (do not call `eas login --token` in CI)
+          eas whoami || true
           eas build --platform android --non-interactive --no-wait --profile preview
-
-# Edits made: added an optional EAS Update step (controlled by ENABLE_EAS_UPDATE env) and ensured eas-cli is installed and logged-in before update/build. Removed any expo publish usage and limited builds to Android only.
