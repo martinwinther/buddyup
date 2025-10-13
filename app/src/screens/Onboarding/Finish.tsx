@@ -1,12 +1,15 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
-import { useRoute } from '@react-navigation/native';
+import { useRoute, RouteProp } from '@react-navigation/native';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
+import { RootStackParamList } from '../../types';
+
+type FinishRouteProp = RouteProp<RootStackParamList, 'OnboardingFinish'>;
 
 export default function Finish() {
-  const route = useRoute();
-  const { profileData, selectedCategories } = route.params as any;
+  const route = useRoute<FinishRouteProp>();
+  const { profileData, selectedCategories } = route.params;
   const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
 

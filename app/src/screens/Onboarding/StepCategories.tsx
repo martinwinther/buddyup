@@ -1,18 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from 'react-native';
-import { useNavigation, useRoute } from '@react-navigation/native';
+import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { supabase } from '../../lib/supabase';
+import { Category, RootStackParamList } from '../../types';
 
-interface Category {
-  id: string;
-  name: string;
-  emoji: string;
-}
+type StepCategoriesNavigationProp = NativeStackNavigationProp<RootStackParamList, 'OnboardingCategories'>;
+type StepCategoriesRouteProp = RouteProp<RootStackParamList, 'OnboardingCategories'>;
 
 export default function StepCategories() {
-  const navigation = useNavigation();
-  const route = useRoute();
-  const { profileData } = route.params as any;
+  const navigation = useNavigation<StepCategoriesNavigationProp>();
+  const route = useRoute<StepCategoriesRouteProp>();
+  const { profileData } = route.params;
 
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
@@ -57,10 +56,10 @@ export default function StepCategories() {
       return;
     }
 
-    navigation.navigate('OnboardingFinish' as never, {
+    navigation.navigate('OnboardingFinish', {
       profileData,
       selectedCategories,
-    } as never);
+    });
   };
 
   if (isLoading) {

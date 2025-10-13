@@ -1,16 +1,13 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ScrollView, Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { ProfileData, RootStackParamList } from '../../types';
 
-interface ProfileData {
-  displayName: string;
-  age: string;
-  bio: string;
-  phone: string;
-}
+type StepProfileNavigationProp = NativeStackNavigationProp<RootStackParamList, 'OnboardingProfile'>;
 
 export default function StepProfile() {
-  const navigation = useNavigation();
+  const navigation = useNavigation<StepProfileNavigationProp>();
   const [profileData, setProfileData] = useState<ProfileData>({
     displayName: '',
     age: '',
@@ -35,7 +32,7 @@ export default function StepProfile() {
       return;
     }
 
-    navigation.navigate('OnboardingCategories' as never, { profileData } as never);
+    navigation.navigate('OnboardingCategories', { profileData });
   };
 
   return (

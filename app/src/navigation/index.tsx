@@ -4,6 +4,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { View, ActivityIndicator } from 'react-native';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
+import { RootStackParamList } from '../types';
 
 import Home from '../screens/Home';
 import SignUpEmail from '../screens/Auth/SignUpEmail';
@@ -11,15 +12,6 @@ import SignInEmail from '../screens/Auth/SignInEmail';
 import StepProfile from '../screens/Onboarding/StepProfile';
 import StepCategories from '../screens/Onboarding/StepCategories';
 import Finish from '../screens/Onboarding/Finish';
-
-export type RootStackParamList = {
-  Home: undefined;
-  SignUpEmail: undefined;
-  SignInEmail: undefined;
-  OnboardingProfile: undefined;
-  OnboardingCategories: { profileData: any };
-  OnboardingFinish: { profileData: any; selectedCategories: string[] };
-};
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 

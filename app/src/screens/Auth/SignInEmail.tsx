@@ -1,10 +1,14 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useAuth } from '../../contexts/AuthContext';
+import { RootStackParamList } from '../../types';
+
+type SignInEmailNavigationProp = NativeStackNavigationProp<RootStackParamList, 'SignInEmail'>;
 
 export default function SignInEmail() {
-  const navigation = useNavigation();
+  const navigation = useNavigation<SignInEmailNavigationProp>();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -74,7 +78,7 @@ export default function SignInEmail() {
 
         <View className="flex-row justify-center mt-6">
           <Text className="text-white/60 text-sm">Don't have an account? </Text>
-          <TouchableOpacity onPress={() => navigation.navigate('SignUpEmail' as never)}>
+          <TouchableOpacity onPress={() => navigation.navigate('SignUpEmail')}>
             <Text className="text-blue-500 text-sm font-semibold">Sign Up</Text>
           </TouchableOpacity>
         </View>

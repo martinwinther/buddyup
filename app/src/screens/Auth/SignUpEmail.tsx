@@ -1,10 +1,14 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useAuth } from '../../contexts/AuthContext';
+import { RootStackParamList } from '../../types';
+
+type SignUpEmailNavigationProp = NativeStackNavigationProp<RootStackParamList, 'SignUpEmail'>;
 
 export default function SignUpEmail() {
-  const navigation = useNavigation();
+  const navigation = useNavigation<SignUpEmailNavigationProp>();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -58,7 +62,7 @@ export default function SignUpEmail() {
 
         <TouchableOpacity
           className="bg-blue-500 rounded-2xl py-4 px-8 mb-4"
-          onPress={() => navigation.navigate('SignInEmail' as never)}
+          onPress={() => navigation.navigate('SignInEmail')}
         >
           <Text className="text-white text-center text-base font-semibold">
             Go to Sign In
