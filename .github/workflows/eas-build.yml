@@ -30,7 +30,7 @@ jobs:
           cache: npm
           cache-dependency-path: app/package-lock.json
 
-      - name: Setup EAS
+      - name: Setup EAS (expo action)
         uses: expo/expo-github-action@v8
         with:
           eas-version: latest
@@ -40,10 +40,30 @@ jobs:
         working-directory: ./app
         run: npm ci
 
-      - name: Build on EAS
+      - name: (Optional) EAS Update (OTA publish)
+        if: env.ENABLE_EAS_UPDATE == 'true'
+        working-directory: ./app
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.EXPO_PUBLIC_SUPABASE_URL }}
+          EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.EXPO_PUBLIC_SUPABASE_ANON_KEY }}
+        run: |
+          # Ensure eas-cli is available
+          npm install -g eas-cli
+          # Login using token and publish JS bundle to the 'preview' branch
+          eas login --token $EXPO_TOKEN
+          eas update --branch preview --message "CI: OTA update from $GITHUB_SHA" --non-interactive
+
+      - name: Build on EAS (Android only)
         working-directory: ./app
         env:
           EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.EXPO_PUBLIC_SUPABASE_URL }}
           EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.EXPO_PUBLIC_SUPABASE_ANON_KEY }}
-        run: eas build --platform android --non-interactive --no-wait --profile preview
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: |
+          # Ensure eas-cli is available
+          npm install -g eas-cli
+          eas login --token $EXPO_TOKEN
+          eas build --platform android --non-interactive --no-wait --profile preview
 
+# Edits made: added an optional EAS Update step (controlled by ENABLE_EAS_UPDATE env) and ensured eas-cli is installed and logged-in before update/build. Removed any expo publish usage and limited builds to Android only.
