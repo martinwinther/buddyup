@@ -70,8 +70,7 @@ export default function StepProfile() {
         photoUri: selectedImageUri,
       });
 
-      const updatedProfileData = { ...profileData, photoUrl: selectedImageUri || undefined };
-      navigation.navigate('OnboardingCategories', { profileData: updatedProfileData });
+      navigation.navigate('OnboardingCategories');
     } catch (error: any) {
       console.error('Error saving profile:', error);
       setUploadError(error.message || 'Failed to save profile');

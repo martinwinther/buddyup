@@ -26,10 +26,7 @@ export default function StepCategories() {
     try {
       await persistence.saveCategories(selected);
       setCategories(selected);
-      navigation.navigate('OnboardingFinish', {
-        profileData: { displayName: '', age: '', bio: '', phone: '' },
-        selectedCategories: [],
-      });
+      navigation.navigate('OnboardingFinish');
     } catch (error: any) {
       console.error('Error saving categories:', error);
     }

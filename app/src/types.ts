@@ -32,7 +32,7 @@ export type RootStackParamList = {
   SignUpEmail: undefined;
   SignInEmail: undefined;
   OnboardingProfile: undefined;
-  OnboardingCategories: { profileData: ProfileData };
-  OnboardingFinish: { profileData: ProfileData; selectedCategories: string[] };
+  OnboardingCategories: undefined;
+  OnboardingFinish: undefined;
 };
 
