@@ -5,12 +5,15 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import * as ImagePicker from 'expo-image-picker';
 import { ProfileData, RootStackParamList } from '../../types';
 import { useOnboardingPersistence } from '../../features/onboarding/persistence';
+import { useAuth } from '../../contexts/AuthContext';
+import { uploadProfilePhotoFromUri } from '../../lib/upload';
 
 type StepProfileNavigationProp = NativeStackNavigationProp<RootStackParamList, 'OnboardingProfile'>;
 
 export default function StepProfile() {
   const navigation = useNavigation<StepProfileNavigationProp>();
   const persistence = useOnboardingPersistence();
+  const { user } = useAuth();
   const [profileData, setProfileData] = useState<ProfileData>({
     displayName: '',
     age: '',
@@ -19,6 +22,7 @@ export default function StepProfile() {
   });
   const [selectedImageUri, setSelectedImageUri] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
 
   const pickImage = async () => {
@@ -43,6 +47,12 @@ export default function StepProfile() {
   };
 
   const handleContinue = async () => {
+    if (!user?.id) {
+      setUploadError('Authentication error. Please sign in again.');
+      Alert.alert('Error', 'Authentication error. Please sign in again.');
+      return;
+    }
+
     if (!profileData.displayName.trim()) {
       Alert.alert('Error', 'Please enter your display name');
       return;
@@ -63,11 +73,29 @@ export default function StepProfile() {
     setUploadError(null);
 
     try {
+      let photoUriToSave: string | null = null;
+
+      if (selectedImageUri) {
+        if (selectedImageUri.startsWith('http')) {
+          photoUriToSave = selectedImageUri;
+        } else {
+          setIsUploading(true);
+          try {
+            photoUriToSave = await uploadProfilePhotoFromUri(selectedImageUri, user.id);
+          } catch (uploadErr: any) {
+            console.error('Error uploading photo:', uploadErr);
+            throw new Error('Failed to upload photo. Please try again.');
+          } finally {
+            setIsUploading(false);
+          }
+        }
+      }
+
       await persistence.saveProfile({
-        displayName: profileData.displayName,
+        displayName: profileData.displayName.trim(),
         age: Number(profileData.age),
-        bio: profileData.bio || undefined,
-        photoUri: selectedImageUri,
+        bio: profileData.bio?.trim() || undefined,
+        photoUri: photoUriToSave,
       });
 
       navigation.navigate('OnboardingCategories');
@@ -188,7 +216,7 @@ export default function StepProfile() {
             <View className="flex-row items-center justify-center">
               <ActivityIndicator color="#ffffff" size="small" />
               <Text className="text-white text-center text-base font-semibold ml-2">
-                Saving...
+                {isUploading ? 'Uploading photo...' : 'Saving...'}
               </Text>
             </View>
           ) : (
