@@ -10,7 +10,7 @@ import { useCategorySelection } from '../../features/categories/useCategorySelec
 import { useOnboarding } from '../../contexts/OnboardingContext';
 import { useOnboardingPersistence } from '../../features/onboarding/persistence';
 import { CategoryGrid } from '../../components/CategoryGrid';
-import { GlassCard } from '../../components/GlassCard';
+import GlassCard from '../../components/GlassCard';
 
 type StepCategoriesNavigationProp = NativeStackNavigationProp<RootStackParamList, 'OnboardingCategories'>;
 
