@@ -10,7 +10,6 @@ import { useCategorySelection } from '../../features/categories/useCategorySelec
 import { useOnboarding } from '../../contexts/OnboardingContext';
 import { useOnboardingPersistence } from '../../features/onboarding/persistence';
 import { CategoryGrid } from '../../components/CategoryGrid';
-import GlassCard from '../../components/GlassCard';
 
 type StepCategoriesNavigationProp = NativeStackNavigationProp<RootStackParamList, 'OnboardingCategories'>;
 
@@ -92,7 +91,7 @@ export default function StepCategories() {
               if (!category) return null;
               
               return (
-                <GlassCard key={item.categoryId} className="mb-4 p-4">
+                <View key={item.categoryId} className="bg-zinc-900/90 rounded-3xl border border-white/20 p-6 mb-4">
                   <View className="mb-4">
                     <Text className="text-white font-medium text-base mb-2">
                       {category.name}
@@ -129,7 +128,7 @@ export default function StepCategories() {
                       thumbColor={item.active ? '#fff' : '#9ca3af'}
                     />
                   </View>
-                </GlassCard>
+                </View>
               );
             })}
           </View>
