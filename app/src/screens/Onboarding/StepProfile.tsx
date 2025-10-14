@@ -13,7 +13,7 @@ type StepProfileNavigationProp = NativeStackNavigationProp<RootStackParamList, '
 export default function StepProfile() {
   const navigation = useNavigation<StepProfileNavigationProp>();
   const persistence = useOnboardingPersistence();
-  const { user } = useAuth();
+  const { user, session, isLoading } = useAuth();
   const [profileData, setProfileData] = useState<ProfileData>({
     displayName: '',
     age: '',
@@ -47,9 +47,10 @@ export default function StepProfile() {
   };
 
   const handleContinue = async () => {
-    if (!user?.id) {
-      setUploadError('Authentication error. Please sign in again.');
-      Alert.alert('Error', 'Authentication error. Please sign in again.');
+    if (!session) {
+      const message = 'You need to be signed in before uploading a photo. If you just signed up, please verify email and sign in.';
+      setUploadError(message);
+      Alert.alert('Authentication Required', message);
       return;
     }
 
@@ -81,9 +82,16 @@ export default function StepProfile() {
         } else {
           setIsUploading(true);
           try {
-            photoUriToSave = await uploadProfilePhotoFromUri(selectedImageUri, user.id);
+            photoUriToSave = await uploadProfilePhotoFromUri(selectedImageUri);
           } catch (uploadErr: any) {
             console.error('Error uploading photo:', uploadErr);
+            
+            if (uploadErr.code === 'NO_SESSION' || uploadErr.message?.includes('UPLOAD_RLS')) {
+              const message = 'You need to be signed in before uploading a photo. If you just signed up, please verify email and sign in.';
+              setUploadError(message);
+              throw new Error(message);
+            }
+            
             throw new Error('Failed to upload photo. Please try again.');
           } finally {
             setIsUploading(false);
@@ -208,9 +216,9 @@ export default function StepProfile() {
         </View>
 
         <TouchableOpacity
-          className={`rounded-2xl py-4 ${isSaving ? 'bg-blue-500/50' : 'bg-blue-500'}`}
+          className={`rounded-2xl py-4 ${isSaving || isLoading || !session ? 'bg-blue-500/50' : 'bg-blue-500'}`}
           onPress={handleContinue}
-          disabled={isSaving}
+          disabled={isSaving || isLoading || !session}
         >
           {isSaving ? (
             <View className="flex-row items-center justify-center">
@@ -225,6 +233,18 @@ export default function StepProfile() {
             </Text>
           )}
         </TouchableOpacity>
+
+        {__DEV__ && (
+          <View className="mt-4 bg-zinc-900/50 rounded-xl p-3 border border-white/10">
+            <Text className="text-white/40 text-xs font-mono mb-1">DEV INFO</Text>
+            <Text className="text-white/60 text-xs font-mono">
+              user: {user?.id ? user.id.slice(0, 8) : '❌'}
+            </Text>
+            <Text className="text-white/60 text-xs font-mono">
+              session: {session ? '✅' : '❌'}
+            </Text>
+          </View>
+        )}
       </View>
     </ScrollView>
   );
