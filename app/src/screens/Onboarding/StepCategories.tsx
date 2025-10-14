@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -10,6 +10,7 @@ import { useCategorySelection } from '../../features/categories/useCategorySelec
 import { useOnboarding } from '../../contexts/OnboardingContext';
 import { useOnboardingPersistence } from '../../features/onboarding/persistence';
 import { CategoryGrid } from '../../components/CategoryGrid';
+import { useSessionGate } from '../../lib/authGate';
 
 type StepCategoriesNavigationProp = NativeStackNavigationProp<RootStackParamList, 'OnboardingCategories'>;
 
@@ -19,6 +20,16 @@ export default function StepCategories() {
   const { selected, toggle, setIntensity, setActive, maxReached, isSelected } = useCategorySelection();
   const { setCategories } = useOnboarding();
   const persistence = useOnboardingPersistence();
+  const { loading: gateLoading, hasSession } = useSessionGate();
+
+  useEffect(() => {
+    if (!gateLoading && !hasSession) {
+      navigation.reset({ 
+        index: 0, 
+        routes: [{ name: 'SignInEmail' as never }] 
+      });
+    }
+  }, [gateLoading, hasSession, navigation]);
 
   const handleContinue = async () => {
     if (selected.length === 0) return;
@@ -32,7 +43,7 @@ export default function StepCategories() {
     }
   };
 
-  const canContinue = selected.length >= 1 && selected.length <= 3;
+  const canContinue = selected.length >= 1 && selected.length <= 3 && !gateLoading && hasSession;
 
   if (loading) {
     return (

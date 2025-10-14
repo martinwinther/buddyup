@@ -27,12 +27,16 @@ export default function SignUpEmail() {
     }
 
     setIsLoading(true);
-    const { error } = await signUpWithEmail(email, password);
+    const { data, error } = await signUpWithEmail(email, password);
     setIsLoading(false);
 
     if (error) {
       Alert.alert('Sign Up Failed', error.message);
+    } else if (data?.session) {
+      // Session created immediately - navigate to onboarding
+      navigation.navigate('OnboardingProfile' as never);
     } else {
+      // No session yet - show confirmation screen
       setShowConfirmation(true);
     }
   };
@@ -62,7 +66,9 @@ export default function SignUpEmail() {
 
         <TouchableOpacity
           className="bg-blue-500 rounded-2xl py-4 px-8 mb-4"
-          onPress={() => navigation.navigate('SignInEmail')}
+          onPress={() => navigation.navigate('SignInEmail', { 
+            notice: 'Account created. Please sign in to continue. If email confirmation is required, confirm your email first, then sign in.' 
+          })}
         >
           <Text className="text-white text-center text-base font-semibold">
             Go to Sign In

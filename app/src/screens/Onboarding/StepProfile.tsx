@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ScrollView, Alert, Image, ActivityIndicator } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -7,6 +7,7 @@ import { ProfileData, RootStackParamList } from '../../types';
 import { useOnboardingPersistence } from '../../features/onboarding/persistence';
 import { useAuth } from '../../contexts/AuthContext';
 import { uploadProfilePhotoFromUri } from '../../lib/upload';
+import { useSessionGate } from '../../lib/authGate';
 
 type StepProfileNavigationProp = NativeStackNavigationProp<RootStackParamList, 'OnboardingProfile'>;
 
@@ -14,6 +15,7 @@ export default function StepProfile() {
   const navigation = useNavigation<StepProfileNavigationProp>();
   const persistence = useOnboardingPersistence();
   const { user, session, isLoading } = useAuth();
+  const { loading: gateLoading, hasSession } = useSessionGate();
   const [profileData, setProfileData] = useState<ProfileData>({
     displayName: '',
     age: '',
@@ -24,6 +26,15 @@ export default function StepProfile() {
   const [isSaving, setIsSaving] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!gateLoading && !hasSession) {
+      navigation.reset({ 
+        index: 0, 
+        routes: [{ name: 'SignInEmail' as never }] 
+      });
+    }
+  }, [gateLoading, hasSession, navigation]);
 
   const pickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -216,9 +227,9 @@ export default function StepProfile() {
         </View>
 
         <TouchableOpacity
-          className={`rounded-2xl py-4 ${isSaving || isLoading || !session ? 'bg-blue-500/50' : 'bg-blue-500'}`}
+          className={`rounded-2xl py-4 ${isSaving || isLoading || !session || gateLoading || !hasSession ? 'bg-blue-500/50' : 'bg-blue-500'}`}
           onPress={handleContinue}
-          disabled={isSaving || isLoading || !session}
+          disabled={isSaving || isLoading || !session || gateLoading || !hasSession}
         >
           {isSaving ? (
             <View className="flex-row items-center justify-center">

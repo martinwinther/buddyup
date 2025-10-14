@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { View, ActivityIndicator } from 'react-native';
 import { useAuth } from '../contexts/AuthContext';
 import { useOnboardingPersistence } from '../features/onboarding/persistence';
 import { RootStackParamList } from '../types';
+import { SplashOrLoader } from '../components/SplashOrLoader';
 
 import Home from '../screens/Home';
 import SignUpEmail from '../screens/Auth/SignUpEmail';
@@ -16,35 +16,44 @@ import Finish from '../screens/Onboarding/Finish';
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export default function Navigation() {
-  const { user, isLoading: authLoading } = useAuth();
+  const { session, isLoading } = useAuth();
   const persistence = useOnboardingPersistence();
-  const [onboardingCompleted, setOnboardingCompleted] = useState<boolean | null>(null);
+  const [checking, setChecking] = useState(true);
+  const [completed, setCompleted] = useState(false);
 
   useEffect(() => {
-    if (user) {
-      checkOnboardingStatus();
-    } else {
-      setOnboardingCompleted(null);
-    }
-  }, [user]);
+    let alive = true;
 
-  const checkOnboardingStatus = async () => {
-    if (!user) return;
+    (async () => {
+      if (!session) {
+        if (alive) {
+          setCompleted(false);
+          setChecking(false);
+        }
+        return;
+      }
 
-    try {
-      const completed = await persistence.isCompleted();
-      setOnboardingCompleted(completed);
-    } catch {
-      setOnboardingCompleted(false);
-    }
-  };
+      try {
+        const done = await persistence.isCompleted();
+        if (alive) {
+          setCompleted(done);
+          setChecking(false);
+        }
+      } catch {
+        if (alive) {
+          setCompleted(false);
+          setChecking(false);
+        }
+      }
+    })();
 
-  if (authLoading || (user && onboardingCompleted === null)) {
-    return (
-      <View className="flex-1 bg-[#0a0a0a] justify-center items-center">
-        <ActivityIndicator size="large" color="#3b82f6" />
-      </View>
-    );
+    return () => {
+      alive = false;
+    };
+  }, [session]);
+
+  if (isLoading || checking) {
+    return <SplashOrLoader />;
   }
 
   return (
@@ -55,12 +64,12 @@ export default function Navigation() {
           contentStyle: { backgroundColor: '#0a0a0a' },
         }}
       >
-        {!user ? (
+        {!session ? (
           <>
             <Stack.Screen name="SignUpEmail" component={SignUpEmail} />
             <Stack.Screen name="SignInEmail" component={SignInEmail} />
           </>
-        ) : !onboardingCompleted ? (
+        ) : !completed ? (
           <>
             <Stack.Screen name="OnboardingProfile" component={StepProfile} />
             <Stack.Screen name="OnboardingCategories" component={StepCategories} />

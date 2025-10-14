@@ -30,7 +30,7 @@ export type ProfileData = {
 export type RootStackParamList = {
   Home: undefined;
   SignUpEmail: undefined;
-  SignInEmail: undefined;
+  SignInEmail: { notice?: string } | undefined;
   OnboardingProfile: undefined;
   OnboardingCategories: undefined;
   OnboardingFinish: undefined;

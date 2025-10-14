@@ -1,18 +1,22 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, Alert } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useAuth } from '../../contexts/AuthContext';
 import { RootStackParamList } from '../../types';
+import { NoticeBanner } from '../../components/NoticeBanner';
 
 type SignInEmailNavigationProp = NativeStackNavigationProp<RootStackParamList, 'SignInEmail'>;
+type SignInEmailRouteProp = RouteProp<RootStackParamList, 'SignInEmail'>;
 
 export default function SignInEmail() {
   const navigation = useNavigation<SignInEmailNavigationProp>();
+  const route = useRoute<SignInEmailRouteProp>();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { signInWithEmail } = useAuth();
+  const notice = route.params?.notice;
 
   const handleSignIn = async () => {
     if (!email || !password) {
@@ -26,6 +30,10 @@ export default function SignInEmail() {
 
     if (error) {
       Alert.alert('Sign In Failed', error.message);
+    } else {
+      // Successfully signed in - navigation will auto-switch to onboarding stack
+      // No explicit navigation needed here, but we can optionally navigate
+      navigation.navigate('OnboardingProfile' as never);
     }
   };
 
@@ -37,6 +45,8 @@ export default function SignInEmail() {
           Sign in to continue
         </Text>
       </View>
+
+      {notice && <NoticeBanner message={notice} type="success" />}
 
       <View className="space-y-4">
         <View>
