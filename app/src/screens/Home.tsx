@@ -47,19 +47,18 @@ export default function Home() {
 
   const handleClearOnboarding = async () => {
     Alert.alert(
-      'Clear Onboarding Data',
-      'This will clear local onboarding data and return you to onboarding. Continue?',
+      'Reset Onboarding',
+      'Note: Onboarding data is now stored in the database. To reset, you\'ll need to sign out and sign back in, or manually delete your profile data.',
       [
         { text: 'Cancel', style: 'cancel' },
         {
-          text: 'Clear',
+          text: 'Sign Out',
           style: 'destructive',
           onPress: async () => {
             try {
-              await persistence.clear();
               await signOut();
             } catch (error: any) {
-              Alert.alert('Error', 'Failed to clear onboarding: ' + error.message);
+              Alert.alert('Error', 'Failed to sign out: ' + error.message);
             }
           },
         },
@@ -112,10 +111,10 @@ export default function Home() {
 
           <TouchableOpacity
             onPress={handleClearOnboarding}
-            className="bg-red-500/20 border border-red-500/40 rounded-xl px-4 py-3 mb-4"
+            className="bg-amber-500/20 border border-amber-500/40 rounded-xl px-4 py-3 mb-4"
           >
-            <Text className="text-red-400 text-sm text-center font-medium">
-              🧹 Clear Onboarding (Dev)
+            <Text className="text-amber-400 text-sm text-center font-medium">
+              ⚙️ Reset Onboarding (Dev)
             </Text>
           </TouchableOpacity>
 
