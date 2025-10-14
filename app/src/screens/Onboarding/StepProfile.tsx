@@ -4,15 +4,13 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import * as ImagePicker from 'expo-image-picker';
 import { ProfileData, RootStackParamList } from '../../types';
-import { useAuth } from '../../contexts/AuthContext';
-import { uploadProfilePhotoFromUri } from '../../lib/upload';
-import { supabase } from '../../lib/supabase';
+import { useOnboardingPersistence } from '../../features/onboarding/persistence';
 
 type StepProfileNavigationProp = NativeStackNavigationProp<RootStackParamList, 'OnboardingProfile'>;
 
 export default function StepProfile() {
   const navigation = useNavigation<StepProfileNavigationProp>();
-  const { user } = useAuth();
+  const persistence = useOnboardingPersistence();
   const [profileData, setProfileData] = useState<ProfileData>({
     displayName: '',
     age: '',
@@ -20,7 +18,7 @@ export default function StepProfile() {
     phone: '',
   });
   const [selectedImageUri, setSelectedImageUri] = useState<string | null>(null);
-  const [isUploading, setIsUploading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
 
   const pickImage = async () => {
@@ -61,41 +59,25 @@ export default function StepProfile() {
       return;
     }
 
-    if (!user) {
-      Alert.alert('Error', 'No authenticated user found');
-      return;
-    }
-
-    setIsUploading(true);
+    setIsSaving(true);
     setUploadError(null);
 
     try {
-      let photoUrl: string | undefined;
-
-      if (selectedImageUri) {
-        photoUrl = await uploadProfilePhotoFromUri(selectedImageUri, user.id);
-      }
-
-      const { error } = await supabase.from('profiles').upsert({
-        id: user.id,
-        display_name: profileData.displayName,
-        bio: profileData.bio || null,
+      await persistence.saveProfile({
+        displayName: profileData.displayName,
         age: Number(profileData.age),
-        photo_url: photoUrl || null,
+        bio: profileData.bio || undefined,
+        photoUri: selectedImageUri,
       });
 
-      if (error) {
-        throw error;
-      }
-
-      const updatedProfileData = { ...profileData, photoUrl };
+      const updatedProfileData = { ...profileData, photoUrl: selectedImageUri || undefined };
       navigation.navigate('OnboardingCategories', { profileData: updatedProfileData });
     } catch (error: any) {
       console.error('Error saving profile:', error);
       setUploadError(error.message || 'Failed to save profile');
       Alert.alert('Error', error.message || 'Failed to save profile. Please try again.');
     } finally {
-      setIsUploading(false);
+      setIsSaving(false);
     }
   };
 
@@ -171,7 +153,7 @@ export default function StepProfile() {
           <TouchableOpacity 
             className="bg-white/10 border border-white/30 border-dashed rounded-2xl py-8 items-center overflow-hidden"
             onPress={pickImage}
-            disabled={isUploading}
+            disabled={isSaving}
           >
             {selectedImageUri ? (
               <View className="w-full items-center">
@@ -199,11 +181,11 @@ export default function StepProfile() {
         </View>
 
         <TouchableOpacity
-          className={`rounded-2xl py-4 ${isUploading ? 'bg-blue-500/50' : 'bg-blue-500'}`}
+          className={`rounded-2xl py-4 ${isSaving ? 'bg-blue-500/50' : 'bg-blue-500'}`}
           onPress={handleContinue}
-          disabled={isUploading}
+          disabled={isSaving}
         >
-          {isUploading ? (
+          {isSaving ? (
             <View className="flex-row items-center justify-center">
               <ActivityIndicator color="#ffffff" size="small" />
               <Text className="text-white text-center text-base font-semibold ml-2">

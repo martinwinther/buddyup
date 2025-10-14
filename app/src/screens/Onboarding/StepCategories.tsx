@@ -8,6 +8,7 @@ import { RootStackParamList } from '../../types';
 import { useCategories } from '../../features/categories/CategoriesProvider';
 import { useCategorySelection } from '../../features/categories/useCategorySelection';
 import { useOnboarding } from '../../contexts/OnboardingContext';
+import { useOnboardingPersistence } from '../../features/onboarding/persistence';
 import { CategoryGrid } from '../../components/CategoryGrid';
 import { GlassCard } from '../../components/GlassCard';
 
@@ -18,15 +19,21 @@ export default function StepCategories() {
   const { categories, loading, error } = useCategories();
   const { selected, toggle, setIntensity, setActive, maxReached, isSelected } = useCategorySelection();
   const { setCategories } = useOnboarding();
+  const persistence = useOnboardingPersistence();
 
-  const handleContinue = () => {
+  const handleContinue = async () => {
     if (selected.length === 0) return;
     
-    setCategories(selected);
-    navigation.navigate('OnboardingFinish', {
-      profileData: { displayName: '', age: '', bio: '', phone: '' },
-      selectedCategories: [],
-    });
+    try {
+      await persistence.saveCategories(selected);
+      setCategories(selected);
+      navigation.navigate('OnboardingFinish', {
+        profileData: { displayName: '', age: '', bio: '', phone: '' },
+        selectedCategories: [],
+      });
+    } catch (error: any) {
+      console.error('Error saving categories:', error);
+    }
   };
 
   const canContinue = selected.length >= 1 && selected.length <= 3;

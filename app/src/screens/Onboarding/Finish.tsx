@@ -1,55 +1,28 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
-import { useRoute, RouteProp } from '@react-navigation/native';
-import { useAuth } from '../../contexts/AuthContext';
-import { supabase } from '../../lib/supabase';
+import { useRoute, RouteProp, useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useOnboardingPersistence } from '../../features/onboarding/persistence';
 import { RootStackParamList } from '../../types';
 
 type FinishRouteProp = RouteProp<RootStackParamList, 'OnboardingFinish'>;
+type FinishNavigationProp = NativeStackNavigationProp<RootStackParamList, 'OnboardingFinish'>;
 
 export default function Finish() {
   const route = useRoute<FinishRouteProp>();
-  const { profileData, selectedCategories } = route.params;
-  const { user } = useAuth();
+  const navigation = useNavigation<FinishNavigationProp>();
+  const { profileData } = route.params;
+  const persistence = useOnboardingPersistence();
   const [isLoading, setIsLoading] = useState(false);
 
   const handleFinish = async () => {
-    if (!user) {
-      Alert.alert('Error', 'User not authenticated');
-      return;
-    }
-
     setIsLoading(true);
 
     try {
-      const { error: profileError } = await supabase.from('profiles').upsert({
-        id: user.id,
-        display_name: profileData.displayName,
-        bio: profileData.bio || null,
-        age: Number(profileData.age),
-        photo_url: null,
-        latitude: null,
-        longitude: null,
-      });
-
-      if (profileError) throw profileError;
-
-      const categoryInserts = selectedCategories.map((categoryId: string) => ({
-        user_id: user.id,
-        category_id: categoryId,
-        intensity: 3,
-        active: true,
-      }));
-
-      const { error: categoriesError } = await supabase
-        .from('user_categories')
-        .insert(categoryInserts);
-
-      if (categoriesError) throw categoriesError;
-
-      console.log('✅ Profile and categories saved successfully');
+      await persistence.setCompleted(true);
+      console.log('✅ Onboarding marked as complete');
     } catch (error: any) {
-      Alert.alert('Error', 'Failed to save profile: ' + error.message);
+      Alert.alert('Error', 'Failed to complete onboarding: ' + error.message);
       setIsLoading(false);
     }
   };
@@ -92,7 +65,7 @@ export default function Finish() {
           <View>
             <Text className="text-white/60 text-sm mb-2">Interests</Text>
             <Text className="text-teal-400 text-base">
-              {selectedCategories.length} selected
+              Categories configured
             </Text>
           </View>
         </View>

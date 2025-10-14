@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, SafeAreaView, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, SafeAreaView, ScrollView, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
 import { useAuth } from '../contexts/AuthContext';
+import { useOnboardingPersistence } from '../features/onboarding/persistence';
 import { supabase } from '../lib/supabase';
 import GlassCard from '../components/GlassCard';
 
@@ -12,6 +13,7 @@ interface Profile {
 
 export default function Home() {
   const { user, signOut } = useAuth();
+  const persistence = useOnboardingPersistence();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -41,6 +43,28 @@ export default function Home() {
 
   const handleSignOut = async () => {
     await signOut();
+  };
+
+  const handleClearOnboarding = async () => {
+    Alert.alert(
+      'Clear Onboarding Data',
+      'This will clear local onboarding data and return you to onboarding. Continue?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Clear',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await persistence.clear();
+              await signOut();
+            } catch (error: any) {
+              Alert.alert('Error', 'Failed to clear onboarding: ' + error.message);
+            }
+          },
+        },
+      ]
+    );
   };
 
   return (
@@ -85,6 +109,15 @@ export default function Home() {
               </View>
             )}
           </View>
+
+          <TouchableOpacity
+            onPress={handleClearOnboarding}
+            className="bg-red-500/20 border border-red-500/40 rounded-xl px-4 py-3 mb-4"
+          >
+            <Text className="text-red-400 text-sm text-center font-medium">
+              🧹 Clear Onboarding (Dev)
+            </Text>
+          </TouchableOpacity>
 
           <Text className="text-white text-xl font-semibold mb-4 px-2">
             Discover Buddies

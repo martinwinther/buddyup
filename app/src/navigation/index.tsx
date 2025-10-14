@@ -3,7 +3,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { View, ActivityIndicator } from 'react-native';
 import { useAuth } from '../contexts/AuthContext';
-import { supabase } from '../lib/supabase';
+import { useOnboardingPersistence } from '../features/onboarding/persistence';
 import { RootStackParamList } from '../types';
 
 import Home from '../screens/Home';
@@ -17,33 +17,29 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export default function Navigation() {
   const { user, isLoading: authLoading } = useAuth();
-  const [hasProfile, setHasProfile] = useState<boolean | null>(null);
+  const persistence = useOnboardingPersistence();
+  const [onboardingCompleted, setOnboardingCompleted] = useState<boolean | null>(null);
 
   useEffect(() => {
     if (user) {
-      checkUserProfile();
+      checkOnboardingStatus();
     } else {
-      setHasProfile(null);
+      setOnboardingCompleted(null);
     }
   }, [user]);
 
-  const checkUserProfile = async () => {
+  const checkOnboardingStatus = async () => {
     if (!user) return;
 
     try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('id', user.id)
-        .single();
-
-      setHasProfile(!!data && !error);
+      const completed = await persistence.isCompleted();
+      setOnboardingCompleted(completed);
     } catch {
-      setHasProfile(false);
+      setOnboardingCompleted(false);
     }
   };
 
-  if (authLoading || (user && hasProfile === null)) {
+  if (authLoading || (user && onboardingCompleted === null)) {
     return (
       <View className="flex-1 bg-[#0a0a0a] justify-center items-center">
         <ActivityIndicator size="large" color="#3b82f6" />
@@ -64,7 +60,7 @@ export default function Navigation() {
             <Stack.Screen name="SignUpEmail" component={SignUpEmail} />
             <Stack.Screen name="SignInEmail" component={SignInEmail} />
           </>
-        ) : !hasProfile ? (
+        ) : !onboardingCompleted ? (
           <>
             <Stack.Screen name="OnboardingProfile" component={StepProfile} />
             <Stack.Screen name="OnboardingCategories" component={StepCategories} />
