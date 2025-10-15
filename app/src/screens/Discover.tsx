@@ -43,7 +43,7 @@ export default function Discover() {
         setLastMatch({
           matchId: res.matchId,
           otherId: res.otherId,
-          otherName: candidate?.name,
+          otherName: candidate?.displayName ?? undefined,
         });
         setMatchVisible(true);
       }

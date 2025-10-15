@@ -29,5 +29,7 @@ export type RootStackParamList = {
   OnboardingProfile: undefined;
   OnboardingCategories: undefined;
   OnboardingFinish: undefined;
+  Matches: undefined;
+  Chat: { matchId: string; otherId?: string; name?: string };
 };
 
