@@ -1,5 +1,5 @@
 import { Platform } from 'react-native';
-import * as FileSystem from 'expo-file-system';
+import { File } from 'expo-file-system';
 import { supabase } from './supabase';
 
 export async function uploadProfilePhotoFromUri(uri: string) {
@@ -16,12 +16,10 @@ export async function uploadProfilePhotoFromUri(uri: string) {
     const res = await fetch(uri);
     file = await res.blob();
   } else {
-    // convert file:// to Uint8Array for RN
-    const base64 = await FileSystem.readAsStringAsync(uri, { encoding: FileSystem.EncodingType.Base64 });
-    const binary = atob(base64);
-    const bytes = new Uint8Array(binary.length);
-    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-    file = bytes;
+    // modern API: File implements Blob and has arrayBuffer() method
+    const fsFile = new File(uri);
+    const arrayBuffer = await fsFile.arrayBuffer();
+    file = new Uint8Array(arrayBuffer);
   }
 
   const ext = contentType === 'image/png' ? 'png' : 'jpg';

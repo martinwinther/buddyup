@@ -37,7 +37,7 @@ export default function SignUpEmail() {
       // Session created immediately - navigate to onboarding
       navigation.reset({ 
         index: 0, 
-        routes: [{ name: Routes.OnboardingProfile as never }] 
+        routes: [{ name: Routes.OnboardingProfile }] 
       });
     } else {
       // No session yet - show confirmation screen
@@ -70,9 +70,9 @@ export default function SignUpEmail() {
 
         <TouchableOpacity
           className="bg-blue-500 rounded-2xl py-4 px-8 mb-4"
-          onPress={() => navigation.navigate(Routes.AuthSignIn as never, { 
+          onPress={() => navigation.navigate(Routes.AuthSignIn, { 
             notice: 'Account created. Please sign in to continue. If email confirmation is required, confirm your email first, then sign in.' 
-          } as never)}
+          })}
         >
           <Text className="text-white text-center text-base font-semibold">
             Go to Sign In
@@ -142,7 +142,7 @@ export default function SignUpEmail() {
 
         <View className="flex-row justify-center mt-6">
           <Text className="text-white/60 text-sm">Already have an account? </Text>
-          <TouchableOpacity onPress={() => navigation.navigate(Routes.AuthSignIn as never)}>
+          <TouchableOpacity onPress={() => navigation.navigate(Routes.AuthSignIn)}>
             <Text className="text-blue-500 text-sm font-semibold">Sign In</Text>
           </TouchableOpacity>
         </View>

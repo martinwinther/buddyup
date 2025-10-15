@@ -42,4 +42,3 @@ export function Banner({ type, text }: BannerProps) {
   );
 }
 
-

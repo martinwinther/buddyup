@@ -9,4 +9,3 @@ export const Routes = {
 
 export type RouteName = typeof Routes[keyof typeof Routes];
 
-
