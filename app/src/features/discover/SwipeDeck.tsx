@@ -67,16 +67,19 @@ const SwipeDeck = forwardRef<SwipeDeckRef, Props>(({ candidates, onSwipe }, ref)
   );
 
   const topStyle = useAnimatedStyle(() => ({
+    position: 'absolute',
+    width: '100%',
+    height: '100%',
     transform: [{ translateX: x.value }, { translateY: y.value }, { rotateZ: `${rot.value}deg` }],
   }));
 
   const nextStyle = useAnimatedStyle(() => {
     const scale = interpolate(Math.abs(x.value), [0, SWIPE_OUT], [1, 0.98], Extrapolate.CLAMP);
     const ty = interpolate(Math.abs(x.value), [0, SWIPE_OUT], [0, -6], Extrapolate.CLAMP);
-    return { transform: [{ scale }, { translateY: ty }], opacity: 0.98 };
+    return { position: 'absolute', width: '100%', height: '100%', transform: [{ scale }, { translateY: ty }], opacity: 0.98 };
   });
 
-  const thirdStyle = useAnimatedStyle(() => ({ transform: [{ scale: 0.96 }], opacity: 0.9 }));
+  const thirdStyle = useAnimatedStyle(() => ({ position: 'absolute', width: '100%', height: '100%', transform: [{ scale: 0.96 }], opacity: 0.9 }));
 
   const likeStyle = useAnimatedStyle(() => ({
     opacity: interpolate(x.value, [20, 80], [0, 1], Extrapolate.CLAMP),
@@ -89,7 +92,7 @@ const SwipeDeck = forwardRef<SwipeDeckRef, Props>(({ candidates, onSwipe }, ref)
 
   const Card = (c: Candidate | undefined, style?: any) =>
     c ? (
-      <Animated.View style={[{ position: 'absolute', width: '100%' }, style]}>
+      <Animated.View style={style}>
         <CandidateCard
           name={c.displayName}
           age={c.age}
@@ -101,8 +104,8 @@ const SwipeDeck = forwardRef<SwipeDeckRef, Props>(({ candidates, onSwipe }, ref)
     ) : null;
 
   return (
-    <View className="items-center justify-center">
-      <View className="w-[92%]">
+    <View className="flex-1 items-center justify-center">
+      <View style={{ width: Math.min(width * 0.92, 480), height: 600 }}>
         {Card(third, thirdStyle)}
         {Card(next, nextStyle)}
 

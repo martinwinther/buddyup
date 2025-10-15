@@ -1,5 +1,6 @@
 import React from 'react';
-import { Image, View, Text } from 'react-native';
+import { Image } from 'expo-image';
+import { View, Text, StyleSheet } from 'react-native';
 
 type Props = {
   name: string | null;
@@ -11,12 +12,18 @@ type Props = {
 
 export default function CandidateCard({ name, age, bio, photoUrl, shared }: Props) {
   return (
-    <View className="w-full h-[72vh] rounded-3xl overflow-hidden bg-zinc-900/60 border border-white/10">
+    <View className="flex-1 rounded-3xl overflow-hidden bg-zinc-900/60 border border-white/10">
       {photoUrl ? (
-        <Image source={{ uri: photoUrl }} className="w-full h-full" resizeMode="cover" />
+        <Image
+          source={{ uri: photoUrl }}
+          style={styles.img}
+          contentFit="cover"
+          transition={150}
+        />
       ) : (
         <View className="w-full h-full bg-gradient-to-br from-zinc-800 to-zinc-700" />
       )}
+
       <View className="absolute bottom-0 left-0 right-0 p-4">
         <View className="rounded-2xl p-3 bg-black/45 border border-white/10">
           <Text className="text-zinc-100 text-lg font-semibold">
@@ -29,4 +36,11 @@ export default function CandidateCard({ name, age, bio, photoUrl, shared }: Prop
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  img: {
+    width: '100%',
+    height: '100%',
+  },
+});
 
