@@ -11,12 +11,13 @@ import { useOnboarding } from '../../contexts/OnboardingContext';
 import { useOnboardingPersistence } from '../../features/onboarding/persistence';
 import { CategoryGrid } from '../../components/CategoryGrid';
 import { useSessionGate } from '../../lib/authGate';
+import { Routes } from '../../navigation/routes';
 
 type StepCategoriesNavigationProp = NativeStackNavigationProp<RootStackParamList, 'OnboardingCategories'>;
 
 export default function StepCategories() {
   const navigation = useNavigation<StepCategoriesNavigationProp>();
-  const { categories, loading, error } = useCategories();
+  const { categories, loading, error, reload } = useCategories();
   const { selected, toggle, setIntensity, setActive, maxReached, isSelected } = useCategorySelection();
   const { setCategories } = useOnboarding();
   const persistence = useOnboardingPersistence();
@@ -26,7 +27,7 @@ export default function StepCategories() {
     if (!gateLoading && !hasSession) {
       navigation.reset({ 
         index: 0, 
-        routes: [{ name: 'SignInEmail' as never }] 
+        routes: [{ name: Routes.AuthSignIn as never }] 
       });
     }
   }, [gateLoading, hasSession, navigation]);
@@ -37,7 +38,7 @@ export default function StepCategories() {
     try {
       await persistence.saveCategories(selected);
       setCategories(selected);
-      navigation.navigate('OnboardingFinish');
+      navigation.navigate(Routes.OnboardingFinish as never);
     } catch (error: any) {
       console.error('Error saving categories:', error);
     }
@@ -57,7 +58,33 @@ export default function StepCategories() {
   if (error) {
     return (
       <View className="flex-1 bg-[#0a0a0a] justify-center items-center px-6">
-        <Text className="text-red-400 text-base text-center">{error}</Text>
+        <Text className="text-red-400 text-base text-center mb-6">{error}</Text>
+        <TouchableOpacity
+          className="bg-blue-500 rounded-2xl py-3 px-8"
+          onPress={reload}
+        >
+          <Text className="text-white text-center text-base font-semibold">
+            Retry
+          </Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
+  if (!loading && categories.length === 0) {
+    return (
+      <View className="flex-1 bg-[#0a0a0a] justify-center items-center px-6">
+        <Text className="text-white/60 text-base text-center mb-6">
+          No categories available yet
+        </Text>
+        <TouchableOpacity
+          className="bg-blue-500 rounded-2xl py-3 px-8"
+          onPress={reload}
+        >
+          <Text className="text-white text-center text-base font-semibold">
+            Refresh
+          </Text>
+        </TouchableOpacity>
       </View>
     );
   }

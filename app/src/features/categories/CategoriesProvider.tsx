@@ -5,6 +5,7 @@ interface CategoriesContextType {
   categories: Category[];
   loading: boolean;
   error: string | null;
+  reload: () => Promise<void>;
 }
 
 const CategoriesContext = createContext<CategoriesContextType | undefined>(undefined);
@@ -37,7 +38,7 @@ export function CategoriesProvider({ repo, children }: CategoriesProviderProps) 
   };
 
   return (
-    <CategoriesContext.Provider value={{ categories, loading, error }}>
+    <CategoriesContext.Provider value={{ categories, loading, error, reload: loadCategories }}>
       {children}
     </CategoriesContext.Provider>
   );

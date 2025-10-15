@@ -15,25 +15,35 @@ export class SupabaseOnboardingPersistence implements OnboardingPersistence {
   }
 
   async saveProfile(profile: ProfileDraft) {
-    const id = this.uidOrThrow();
+    const { data: sessionData, error: sessErr } = await supabase.auth.getSession();
+    if (sessErr) throw sessErr;
+    const uid = sessionData?.session?.user?.id;
+    if (!uid) throw new Error('NO_SESSION');
 
-    const photo_url =
-      profile.photoUri && profile.photoUri.startsWith('http')
-        ? profile.photoUri
-        : null;
-
-    const { error } = await supabase.from('profiles').upsert({
-      id,
+    const row = {
+      id: uid,
       display_name: profile.displayName ?? null,
       age: profile.age ?? null,
       bio: profile.bio ?? null,
-      photo_url,
+      photo_url:
+        profile.photoUri && profile.photoUri.startsWith('http') ? profile.photoUri : null,
       last_active: new Date().toISOString(),
-    });
-    
-    if (error) {
-      console.warn('Error saving profile:', error);
-      throw error;
+    };
+
+    const { error: upErr } = await supabase
+      .from('profiles')
+      .upsert(row, { onConflict: 'id' });
+
+    if (upErr) {
+      if ((upErr as any).code === '23505' || (upErr as any).message?.includes('duplicate')) {
+        const { error: updErr } = await supabase.from('profiles').update(row).eq('id', uid);
+        if (updErr) throw updErr;
+        if (__DEV__) console.info('[profiles] updated for uid', uid);
+      } else {
+        throw upErr;
+      }
+    } else {
+      if (__DEV__) console.info('[profiles] saved for uid', uid);
     }
   }
 
@@ -117,17 +127,30 @@ export class SupabaseOnboardingPersistence implements OnboardingPersistence {
     // no-op: completion inferred from DB in isCompleted()
   }
 
-  async isCompleted() {
+  async isCompleted(): Promise<boolean> {
     try {
-      const [p, c] = await Promise.all([
-        this.loadProfile(),
-        this.loadCategories(),
-      ]);
-      
-      const hasProfile = !!(p && (p.displayName || p.photoUri || p.age || p.bio));
-      const hasAnyCategory = !!(c && c.length > 0);
-      
-      return hasProfile && hasAnyCategory;
+      const { data: s } = await supabase.auth.getSession();
+      const uid = s?.session?.user?.id;
+      if (!uid) return false;
+
+      // Has profile with display_name?
+      const { data: prof, error: pErr } = await supabase
+        .from('profiles')
+        .select('id, display_name')
+        .eq('id', uid)
+        .maybeSingle();
+      if (pErr) return false;
+      const hasProfile = !!prof?.id && !!prof?.display_name;
+
+      // Has at least one category? (HEAD + count = exact is fast)
+      const { count, error: cErr } = await supabase
+        .from('user_categories')
+        .select('category_id', { count: 'exact', head: true })
+        .eq('user_id', uid);
+      if (cErr) return false;
+      const hasCats = (count ?? 0) > 0;
+
+      return hasProfile && hasCats; // photo not required
     } catch (error) {
       console.warn('Error checking completion status:', error);
       return false;

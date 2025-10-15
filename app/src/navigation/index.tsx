@@ -5,6 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useOnboardingPersistence } from '../features/onboarding/persistence';
 import { RootStackParamList } from '../types';
 import { SplashOrLoader } from '../components/SplashOrLoader';
+import { Routes } from './routes';
 
 import Home from '../screens/Home';
 import SignUpEmail from '../screens/Auth/SignUpEmail';
@@ -13,7 +14,9 @@ import StepProfile from '../screens/Onboarding/StepProfile';
 import StepCategories from '../screens/Onboarding/StepCategories';
 import Finish from '../screens/Onboarding/Finish';
 
-const Stack = createNativeStackNavigator<RootStackParamList>();
+const AuthStack = createNativeStackNavigator<RootStackParamList>();
+const OnboardingStack = createNativeStackNavigator<RootStackParamList>();
+const MainStack = createNativeStackNavigator<RootStackParamList>();
 
 export default function Navigation() {
   const { session, isLoading } = useAuth();
@@ -56,29 +59,45 @@ export default function Navigation() {
     return <SplashOrLoader />;
   }
 
+  const renderAuthStack = () => (
+    <AuthStack.Navigator
+      screenOptions={{
+        headerShown: false,
+        contentStyle: { backgroundColor: '#0a0a0a' },
+      }}
+    >
+      <AuthStack.Screen name={Routes.AuthSignUp} component={SignUpEmail} />
+      <AuthStack.Screen name={Routes.AuthSignIn} component={SignInEmail} />
+    </AuthStack.Navigator>
+  );
+
+  const renderOnboardingStack = () => (
+    <OnboardingStack.Navigator
+      screenOptions={{
+        headerShown: false,
+        contentStyle: { backgroundColor: '#0a0a0a' },
+      }}
+    >
+      <OnboardingStack.Screen name={Routes.OnboardingProfile} component={StepProfile} />
+      <OnboardingStack.Screen name={Routes.OnboardingCategories} component={StepCategories} />
+      <OnboardingStack.Screen name={Routes.OnboardingFinish} component={Finish} />
+    </OnboardingStack.Navigator>
+  );
+
+  const renderMainStack = () => (
+    <MainStack.Navigator
+      screenOptions={{
+        headerShown: false,
+        contentStyle: { backgroundColor: '#0a0a0a' },
+      }}
+    >
+      <MainStack.Screen name={Routes.Home} component={Home} />
+    </MainStack.Navigator>
+  );
+
   return (
     <NavigationContainer>
-      <Stack.Navigator
-        screenOptions={{
-          headerShown: false,
-          contentStyle: { backgroundColor: '#0a0a0a' },
-        }}
-      >
-        {!session ? (
-          <>
-            <Stack.Screen name="SignUpEmail" component={SignUpEmail} />
-            <Stack.Screen name="SignInEmail" component={SignInEmail} />
-          </>
-        ) : !completed ? (
-          <>
-            <Stack.Screen name="OnboardingProfile" component={StepProfile} />
-            <Stack.Screen name="OnboardingCategories" component={StepCategories} />
-            <Stack.Screen name="OnboardingFinish" component={Finish} />
-          </>
-        ) : (
-          <Stack.Screen name="Home" component={Home} />
-        )}
-      </Stack.Navigator>
+      {!session ? renderAuthStack() : !completed ? renderOnboardingStack() : renderMainStack()}
     </NavigationContainer>
   );
 }

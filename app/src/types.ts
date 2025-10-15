@@ -1,9 +1,3 @@
-export type Category = {
-  id: string;
-  name: string;
-  emoji: string;
-};
-
 export type Card = {
   id: string;
   display_name: string;
@@ -29,8 +23,8 @@ export type ProfileData = {
 
 export type RootStackParamList = {
   Home: undefined;
-  SignUpEmail: undefined;
-  SignInEmail: { notice?: string } | undefined;
+  AuthSignUp: undefined;
+  AuthSignIn: { notice?: string } | undefined;
   OnboardingProfile: undefined;
   OnboardingCategories: undefined;
   OnboardingFinish: undefined;

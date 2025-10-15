@@ -7,12 +7,10 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { AuthProvider, useAuth } from './src/contexts/AuthContext';
 import { OnboardingProvider } from './src/contexts/OnboardingContext';
 import { CategoriesProvider } from './src/features/categories/CategoriesProvider';
-import { FakeCategoriesRepository } from './src/features/categories/FakeCategoriesRepository';
+import { SupabaseCategoriesRepository } from './src/features/categories/SupabaseCategoriesRepository';
 import { PersistenceProvider } from './src/features/onboarding/persistence';
 import { SupabaseOnboardingPersistence } from './src/features/onboarding/persistence';
 import Navigation from './src/navigation';
-
-const categoriesRepo = new FakeCategoriesRepository();
 
 function AppProviders({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
@@ -21,6 +19,8 @@ function AppProviders({ children }: { children: React.ReactNode }) {
     () => new SupabaseOnboardingPersistence(() => user?.id ?? null),
     [user?.id]
   );
+
+  const categoriesRepo = React.useMemo(() => new SupabaseCategoriesRepository(), []);
 
   return (
     <PersistenceProvider impl={persistenceImpl}>

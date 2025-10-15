@@ -1,9 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useOnboardingPersistence } from '../../features/onboarding/persistence';
 import { ProfileDraft, SelectedCategory } from '../../features/onboarding/persistence/types';
+import { RootStackParamList } from '../../types';
+import { Routes } from '../../navigation/routes';
+
+type FinishNavigationProp = NativeStackNavigationProp<RootStackParamList, 'OnboardingFinish'>;
 
 export default function Finish() {
+  const navigation = useNavigation<FinishNavigationProp>();
   const persistence = useOnboardingPersistence();
   const [isLoading, setIsLoading] = useState(false);
   const [profileData, setProfileData] = useState<ProfileDraft | null>(null);
@@ -31,6 +38,12 @@ export default function Finish() {
     try {
       await persistence.setCompleted(true);
       console.log('✅ Onboarding marked as complete');
+      
+      // Reset navigation to Home immediately
+      navigation.reset({
+        index: 0,
+        routes: [{ name: Routes.Home as never }],
+      });
     } catch (error: any) {
       Alert.alert('Error', 'Failed to complete onboarding: ' + error.message);
       setIsLoading(false);

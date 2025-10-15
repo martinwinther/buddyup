@@ -5,9 +5,10 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useAuth } from '../../contexts/AuthContext';
 import { RootStackParamList } from '../../types';
 import { NoticeBanner } from '../../components/NoticeBanner';
+import { Routes } from '../../navigation/routes';
 
-type SignInEmailNavigationProp = NativeStackNavigationProp<RootStackParamList, 'SignInEmail'>;
-type SignInEmailRouteProp = RouteProp<RootStackParamList, 'SignInEmail'>;
+type SignInEmailNavigationProp = NativeStackNavigationProp<RootStackParamList, 'AuthSignIn'>;
+type SignInEmailRouteProp = RouteProp<RootStackParamList, 'AuthSignIn'>;
 
 export default function SignInEmail() {
   const navigation = useNavigation<SignInEmailNavigationProp>();
@@ -32,8 +33,10 @@ export default function SignInEmail() {
       Alert.alert('Sign In Failed', error.message);
     } else {
       // Successfully signed in - navigation will auto-switch to onboarding stack
-      // No explicit navigation needed here, but we can optionally navigate
-      navigation.navigate('OnboardingProfile' as never);
+      navigation.reset({ 
+        index: 0, 
+        routes: [{ name: Routes.OnboardingProfile as never }] 
+      });
     }
   };
 
@@ -88,7 +91,7 @@ export default function SignInEmail() {
 
         <View className="flex-row justify-center mt-6">
           <Text className="text-white/60 text-sm">Don't have an account? </Text>
-          <TouchableOpacity onPress={() => navigation.navigate('SignUpEmail')}>
+          <TouchableOpacity onPress={() => navigation.navigate(Routes.AuthSignUp as never)}>
             <Text className="text-blue-500 text-sm font-semibold">Sign Up</Text>
           </TouchableOpacity>
         </View>

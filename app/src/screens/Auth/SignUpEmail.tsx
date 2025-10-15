@@ -4,8 +4,9 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useAuth } from '../../contexts/AuthContext';
 import { RootStackParamList } from '../../types';
+import { Routes } from '../../navigation/routes';
 
-type SignUpEmailNavigationProp = NativeStackNavigationProp<RootStackParamList, 'SignUpEmail'>;
+type SignUpEmailNavigationProp = NativeStackNavigationProp<RootStackParamList, 'AuthSignUp'>;
 
 export default function SignUpEmail() {
   const navigation = useNavigation<SignUpEmailNavigationProp>();
@@ -34,7 +35,10 @@ export default function SignUpEmail() {
       Alert.alert('Sign Up Failed', error.message);
     } else if (data?.session) {
       // Session created immediately - navigate to onboarding
-      navigation.navigate('OnboardingProfile' as never);
+      navigation.reset({ 
+        index: 0, 
+        routes: [{ name: Routes.OnboardingProfile as never }] 
+      });
     } else {
       // No session yet - show confirmation screen
       setShowConfirmation(true);
@@ -66,9 +70,9 @@ export default function SignUpEmail() {
 
         <TouchableOpacity
           className="bg-blue-500 rounded-2xl py-4 px-8 mb-4"
-          onPress={() => navigation.navigate('SignInEmail', { 
+          onPress={() => navigation.navigate(Routes.AuthSignIn as never, { 
             notice: 'Account created. Please sign in to continue. If email confirmation is required, confirm your email first, then sign in.' 
-          })}
+          } as never)}
         >
           <Text className="text-white text-center text-base font-semibold">
             Go to Sign In
@@ -138,7 +142,7 @@ export default function SignUpEmail() {
 
         <View className="flex-row justify-center mt-6">
           <Text className="text-white/60 text-sm">Already have an account? </Text>
-          <TouchableOpacity onPress={() => navigation.navigate('SignInEmail' as never)}>
+          <TouchableOpacity onPress={() => navigation.navigate(Routes.AuthSignIn as never)}>
             <Text className="text-blue-500 text-sm font-semibold">Sign In</Text>
           </TouchableOpacity>
         </View>

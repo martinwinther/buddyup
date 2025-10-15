@@ -6,8 +6,10 @@ import * as ImagePicker from 'expo-image-picker';
 import { ProfileData, RootStackParamList } from '../../types';
 import { useOnboardingPersistence } from '../../features/onboarding/persistence';
 import { useAuth } from '../../contexts/AuthContext';
-import { uploadProfilePhotoFromUri } from '../../lib/upload';
+import { tryUploadProfilePhoto } from '../../lib/upload';
 import { useSessionGate } from '../../lib/authGate';
+import { Routes } from '../../navigation/routes';
+import { Banner } from '../../components/Banner';
 
 type StepProfileNavigationProp = NativeStackNavigationProp<RootStackParamList, 'OnboardingProfile'>;
 
@@ -25,13 +27,13 @@ export default function StepProfile() {
   const [selectedImageUri, setSelectedImageUri] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
-  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [banner, setBanner] = useState<{ type: 'info' | 'warning' | 'error' | 'success'; text: string } | null>(null);
 
   useEffect(() => {
     if (!gateLoading && !hasSession) {
       navigation.reset({ 
         index: 0, 
-        routes: [{ name: 'SignInEmail' as never }] 
+        routes: [{ name: Routes.AuthSignIn as never }] 
       });
     }
   }, [gateLoading, hasSession, navigation]);
@@ -53,18 +55,11 @@ export default function StepProfile() {
 
     if (!result.canceled && result.assets[0]) {
       setSelectedImageUri(result.assets[0].uri);
-      setUploadError(null);
+      setBanner(null);
     }
   };
 
   const handleContinue = async () => {
-    if (!session) {
-      const message = 'You need to be signed in before uploading a photo. If you just signed up, please verify email and sign in.';
-      setUploadError(message);
-      Alert.alert('Authentication Required', message);
-      return;
-    }
-
     if (!profileData.displayName.trim()) {
       Alert.alert('Error', 'Please enter your display name');
       return;
@@ -82,30 +77,30 @@ export default function StepProfile() {
     }
 
     setIsSaving(true);
-    setUploadError(null);
+    setBanner(null);
 
     try {
-      let photoUriToSave: string | null = null;
+      let photoUrl: string | null = null;
 
       if (selectedImageUri) {
         if (selectedImageUri.startsWith('http')) {
-          photoUriToSave = selectedImageUri;
+          photoUrl = selectedImageUri;
         } else {
           setIsUploading(true);
-          try {
-            photoUriToSave = await uploadProfilePhotoFromUri(selectedImageUri);
-          } catch (uploadErr: any) {
-            console.error('Error uploading photo:', uploadErr);
-            
-            if (uploadErr.code === 'NO_SESSION' || uploadErr.message?.includes('UPLOAD_RLS')) {
-              const message = 'You need to be signed in before uploading a photo. If you just signed up, please verify email and sign in.';
-              setUploadError(message);
-              throw new Error(message);
-            }
-            
-            throw new Error('Failed to upload photo. Please try again.');
-          } finally {
-            setIsUploading(false);
+          const res = await tryUploadProfilePhoto(selectedImageUri);
+          setIsUploading(false);
+
+          if (res.ok) {
+            photoUrl = res.url;
+          } else {
+            setBanner({
+              type: 'warning',
+              text:
+                res.reason === 'RLS'
+                  ? 'Could not upload your photo right now. You can continue and add it later.'
+                  : 'Photo upload failed. You can continue and add a photo later.',
+            });
+            photoUrl = null;
           }
         }
       }
@@ -114,13 +109,12 @@ export default function StepProfile() {
         displayName: profileData.displayName.trim(),
         age: Number(profileData.age),
         bio: profileData.bio?.trim() || undefined,
-        photoUri: photoUriToSave,
+        photoUri: photoUrl,
       });
 
-      navigation.navigate('OnboardingCategories');
+      navigation.navigate(Routes.OnboardingCategories as never);
     } catch (error: any) {
       console.error('Error saving profile:', error);
-      setUploadError(error.message || 'Failed to save profile');
       Alert.alert('Error', error.message || 'Failed to save profile. Please try again.');
     } finally {
       setIsSaving(false);
@@ -138,6 +132,8 @@ export default function StepProfile() {
             Tell us a bit about yourself
           </Text>
         </View>
+
+        {banner && <Banner type={banner.type} text={banner.text} />}
 
         <View className="bg-zinc-900/90 rounded-3xl border border-white/20 p-6 mb-6">
           <View className="mb-6">
@@ -218,18 +214,12 @@ export default function StepProfile() {
               </View>
             )}
           </TouchableOpacity>
-
-          {uploadError && (
-            <View className="mt-2">
-              <Text className="text-red-400 text-xs text-center">{uploadError}</Text>
-            </View>
-          )}
         </View>
 
         <TouchableOpacity
-          className={`rounded-2xl py-4 ${isSaving || isLoading || !session || gateLoading || !hasSession ? 'bg-blue-500/50' : 'bg-blue-500'}`}
+          className={`rounded-2xl py-4 ${isSaving || isUploading ? 'bg-blue-500/50' : 'bg-blue-500'}`}
           onPress={handleContinue}
-          disabled={isSaving || isLoading || !session || gateLoading || !hasSession}
+          disabled={isSaving || isUploading}
         >
           {isSaving ? (
             <View className="flex-row items-center justify-center">
@@ -245,14 +235,14 @@ export default function StepProfile() {
           )}
         </TouchableOpacity>
 
-        {__DEV__ && (
+        {__DEV__ && session?.user?.id && (
           <View className="mt-4 bg-zinc-900/50 rounded-xl p-3 border border-white/10">
             <Text className="text-white/40 text-xs font-mono mb-1">DEV INFO</Text>
             <Text className="text-white/60 text-xs font-mono">
-              user: {user?.id ? user.id.slice(0, 8) : '❌'}
+              uid: {session.user.id.slice(0, 8)}…
             </Text>
             <Text className="text-white/60 text-xs font-mono">
-              session: {session ? '✅' : '❌'}
+              path: profiles/{session.user.id.slice(0, 8)}…/avatar.jpg
             </Text>
           </View>
         )}
