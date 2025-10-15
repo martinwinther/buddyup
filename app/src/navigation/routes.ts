@@ -5,6 +5,7 @@ export const Routes = {
   OnboardingProfile: 'OnboardingProfile',
   OnboardingCategories: 'OnboardingCategories',
   OnboardingFinish: 'OnboardingFinish',
+  Discover: 'Discover',
 } as const;
 
 export type RouteName = typeof Routes[keyof typeof Routes];

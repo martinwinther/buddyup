@@ -39,10 +39,10 @@ export default function Finish() {
       await persistence.setCompleted(true);
       console.log('✅ Onboarding marked as complete');
       
-      // Reset navigation to Home immediately
+      // Reset navigation to Discover immediately
       navigation.reset({
         index: 0,
-        routes: [{ name: Routes.Home as never }],
+        routes: [{ name: Routes.Discover as never }],
       });
     } catch (error: any) {
       Alert.alert('Error', 'Failed to complete onboarding: ' + error.message);

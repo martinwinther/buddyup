@@ -8,6 +8,7 @@ import { SplashOrLoader } from '../components/SplashOrLoader';
 import { Routes } from './routes';
 
 import Home from '../screens/Home';
+import Discover from '../screens/Discover';
 import SignUpEmail from '../screens/Auth/SignUpEmail';
 import SignInEmail from '../screens/Auth/SignInEmail';
 import StepProfile from '../screens/Onboarding/StepProfile';
@@ -91,6 +92,7 @@ export default function Navigation() {
         contentStyle: { backgroundColor: '#0a0a0a' },
       }}
     >
+      <MainStack.Screen name={Routes.Discover} component={Discover} />
       <MainStack.Screen name={Routes.Home} component={Home} />
     </MainStack.Navigator>
   );
