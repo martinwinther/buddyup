@@ -15,23 +15,38 @@ export class CandidatesRepository {
       .eq('user_id', uid);
     const myActive = new Set((myCats ?? []).filter(c => c.active !== false).map(c => c.category_id));
 
-    // 3) already swiped targets (exclude)
-    const { data: swiped } = await supabase
+    // 3) exclude only right-swiped profiles (likes) - left swipes should cycle back
+    const { data: liked } = await supabase
       .from('swipes')
       .select('target_id')
-      .eq('swiper_id', uid);
-    const excludeSet = new Set((swiped ?? []).map(r => r.target_id));
-    excludeSet.add(uid);
+      .eq('swiper_id', uid)
+      .eq('direction', 'right');
+    const excludeIds = (liked ?? []).map(r => r.target_id);
+    excludeIds.push(uid); // also exclude self
+    
+    // 4a) get left-swiped profiles to deprioritize them
+    const { data: disliked } = await supabase
+      .from('swipes')
+      .select('target_id')
+      .eq('swiper_id', uid)
+      .eq('direction', 'left');
+    const dislikedSet = new Set((disliked ?? []).map(r => r.target_id));
 
-    // 4) fetch candidate profiles (basic fields), limit a bit larger initially
-    const { data: profs, error: pErr } = await supabase
+    // 4b) fetch candidate profiles, excluding only right-swiped
+    let query = supabase
       .from('profiles')
-      .select('id, display_name, age, bio, photo_url, last_active')
+      .select('id, display_name, age, bio, photo_url, last_active');
+    
+    if (excludeIds.length > 0) {
+      query = query.not('id', 'in', `(${excludeIds.join(',')})`);
+    }
+    
+    const { data: profs, error: pErr } = await query
       .order('last_active', { ascending: false })
-      .limit(limit * 2);
+      .limit(limit * 3);
     if (pErr) throw pErr;
 
-    const candidates = (profs ?? []).filter(p => !excludeSet.has(p.id));
+    const candidates = profs ?? [];
 
     // 5) get categories for those candidates (batch IDs)
     const ids = candidates.map(c => c.id);
@@ -49,11 +64,17 @@ export class CandidatesRepository {
       catByUser.set(row.user_id, arr);
     }
 
-    // 6) score by overlap size (simple baseline)
+    // 6) score by overlap size, heavily penalize disliked profiles
     const scored: Candidate[] = candidates.map(c => {
       const others = new Set(catByUser.get(c.id) ?? []);
       let score = 0;
       for (const k of myActive) if (others.has(k)) score += 1;
+      
+      // deprioritize previously disliked profiles (send to bottom)
+      if (dislikedSet.has(c.id)) {
+        score -= 1000;
+      }
+      
       return {
         id: c.id,
         displayName: c.display_name ?? null,
@@ -64,7 +85,7 @@ export class CandidatesRepository {
       };
     });
 
-    // 7) sort by score desc, tie-break by recency already approximated by initial order
+    // 7) sort by score desc - disliked profiles sink to bottom due to penalty
     scored.sort((a, b) => b.score - a.score);
 
     // 8) final limit
