@@ -67,3 +67,5 @@ coverage/
 # Temporary files
 *.tmp
 *.temp
+app/scripts/seed.mjs
+app/scripts/wipe-seed.mjs
