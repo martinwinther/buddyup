@@ -4,7 +4,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useAuth } from '../contexts/AuthContext';
 import { useOnboardingPersistence } from '../features/onboarding/persistence';
 import { RootStackParamList } from '../types';
-import { SplashOrLoader } from '../components/SplashOrLoader';
+import SplashScreen from '../components/SplashScreen';
 import { Routes } from './routes';
 
 import Home from '../screens/Home';
@@ -20,15 +20,27 @@ const OnboardingStack = createNativeStackNavigator<RootStackParamList>();
 const MainStack = createNativeStackNavigator<RootStackParamList>();
 
 export default function Navigation() {
-  const { session, isLoading } = useAuth();
+  return (
+    <NavigationContainer>
+      <AppGate />
+    </NavigationContainer>
+  );
+}
+
+function AppGate() {
+  const { session, isLoading: authLoading } = useAuth();
   const persistence = useOnboardingPersistence();
-  const [checking, setChecking] = useState(true);
-  const [completed, setCompleted] = useState(false);
+  const [checking, setChecking] = useState<boolean>(true);
+  const [completed, setCompleted] = useState<boolean | null>(null);
 
   useEffect(() => {
     let alive = true;
 
     (async () => {
+      // If auth still loading, stay on splash
+      if (authLoading) return;
+
+      // No session → no onboarding check needed
       if (!session) {
         if (alive) {
           setCompleted(false);
@@ -37,6 +49,8 @@ export default function Navigation() {
         return;
       }
 
+      // Session present → run a single completion check
+      setChecking(true);
       try {
         const done = await persistence.isCompleted();
         if (alive) {
@@ -54,13 +68,23 @@ export default function Navigation() {
     return () => {
       alive = false;
     };
-  }, [session]);
+  }, [authLoading, session?.user?.id]); // re-check only when session identity changes
 
-  if (isLoading || checking) {
-    return <SplashOrLoader />;
+  // Gate: show splash until we definitively know what to render
+  if (authLoading || checking || completed === null) {
+    return <SplashScreen />;
   }
 
-  const renderAuthStack = () => (
+  if (!session) {
+    return <AuthStackNavigator />;
+  }
+
+  // MAIN vs ONBOARDING — choose after check resolves
+  return completed ? <MainStackNavigator /> : <OnboardingStackNavigator />;
+}
+
+function AuthStackNavigator() {
+  return (
     <AuthStack.Navigator
       screenOptions={{
         headerShown: false,
@@ -71,8 +95,10 @@ export default function Navigation() {
       <AuthStack.Screen name={Routes.AuthSignIn} component={SignInEmail} />
     </AuthStack.Navigator>
   );
+}
 
-  const renderOnboardingStack = () => (
+function OnboardingStackNavigator() {
+  return (
     <OnboardingStack.Navigator
       screenOptions={{
         headerShown: false,
@@ -84,8 +110,10 @@ export default function Navigation() {
       <OnboardingStack.Screen name={Routes.OnboardingFinish} component={Finish} />
     </OnboardingStack.Navigator>
   );
+}
 
-  const renderMainStack = () => (
+function MainStackNavigator() {
+  return (
     <MainStack.Navigator
       screenOptions={{
         headerShown: false,
@@ -95,12 +123,6 @@ export default function Navigation() {
       <MainStack.Screen name={Routes.Discover} component={Discover} />
       <MainStack.Screen name={Routes.Home} component={Home} />
     </MainStack.Navigator>
-  );
-
-  return (
-    <NavigationContainer>
-      {!session ? renderAuthStack() : !completed ? renderOnboardingStack() : renderMainStack()}
-    </NavigationContainer>
   );
 }
 
