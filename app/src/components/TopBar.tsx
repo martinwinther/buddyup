@@ -1,7 +1,6 @@
 import React from 'react';
-import { View, Pressable } from 'react-native';
-import Ionicons from '@expo/vector-icons/Ionicons';
-import { Text } from 'react-native';
+import { View, Pressable, Text } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 
 type Props = {
   onPressLeft?: () => void;   // e.g., Settings
