@@ -2,7 +2,9 @@ import React from 'react';
 import { View, Text, Modal, Pressable, ActivityIndicator } from 'react-native';
 import { CandidatesRepository } from '../features/discover/CandidatesRepository';
 import { SwipesRepository } from '../features/discover/SwipesRepository';
-import SwipeDeck from '../features/discover/SwipeDeck';
+import SwipeDeck, { type SwipeDeckRef } from '../features/discover/SwipeDeck';
+import ActionBar from '../features/discover/ActionBar';
+import TopBar from '../components/TopBar';
 import type { Candidate } from '../features/discover/types';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 
@@ -11,6 +13,7 @@ const swipesRepo = new SwipesRepository();
 
 export default function Discover() {
   const nav = useNavigation<any>();
+  const deckRef = React.useRef<SwipeDeckRef>(null);
   const [loading, setLoading] = React.useState(true);
   const [candidates, setCandidates] = React.useState<Candidate[]>([]);
   const [matchVisible, setMatchVisible] = React.useState(false);
@@ -75,11 +78,21 @@ export default function Discover() {
   }
 
   return (
-    <View className="flex-1 bg-[#0a0a0a] pt-8">
-      <Pressable onPress={() => nav.navigate('Matches')} className="absolute right-4 top-8 z-10 px-3 py-2 rounded-xl bg-white/10">
-        <Text className="text-zinc-100">Messages</Text>
-      </Pressable>
-      <SwipeDeck candidates={candidates} onSwipe={handleSwipe} />
+    <View className="flex-1 bg-[#0a0a0a]">
+      <TopBar onPressRight={() => nav.navigate('Matches')} />
+
+      <View className="flex-1 items-center justify-center">
+        <SwipeDeck ref={deckRef} candidates={candidates} onSwipe={handleSwipe} />
+      </View>
+
+      <ActionBar
+        onNope={() => deckRef.current?.swipeLeft()}
+        onLike={() => deckRef.current?.swipeRight()}
+        onSuperLike={() => deckRef.current?.swipeRight()}
+        onRewind={() => {}}
+        onBoost={() => {}}
+      />
+
       <Modal visible={matchVisible} transparent animationType="fade" onRequestClose={() => setMatchVisible(false)}>
         <View className="flex-1 items-center justify-center bg-black/50">
           <View className="w-[85%] rounded-3xl p-6 bg-zinc-900/90 border border-white/10">
