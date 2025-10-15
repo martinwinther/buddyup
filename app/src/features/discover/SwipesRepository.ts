@@ -1,6 +1,10 @@
 import { supabase } from '../../lib/supabase';
 
-type RecordSwipeResult = { matched?: boolean };
+type RecordSwipeResult = { 
+  matched?: boolean;
+  matchId?: string;
+  otherId?: string;
+};
 
 export class SwipesRepository {
   async recordSwipe(targetId: string, direction: 'left' | 'right'): Promise<RecordSwipeResult> {
@@ -35,21 +39,28 @@ export class SwipesRepository {
     }
     if (!mutual) return {};
 
-    // 3) prevent duplicate matches
+    // 3) prevent duplicate matches & get or create matchId
     const { data: existing } = await supabase
       .from('matches')
       .select('id')
       .or(`and(user_a.eq.${uid},user_b.eq.${targetId}),and(user_a.eq.${targetId},user_b.eq.${uid})`)
       .maybeSingle();
 
-    if (!existing) {
-      const { error: matchErr } = await supabase
+    let matchId = existing?.id;
+    if (!matchId) {
+      const { data: created, error: matchErr } = await supabase
         .from('matches')
-        .insert({ user_a: uid, user_b: targetId });
-      if (matchErr) console.warn('[matches] insert error', matchErr);
+        .insert({ user_a: uid, user_b: targetId })
+        .select('id')
+        .single();
+      if (matchErr) {
+        console.warn('[matches] insert error', matchErr);
+      } else {
+        matchId = created?.id;
+      }
     }
 
-    return { matched: true };
+    return { matched: true, matchId, otherId: targetId };
   }
 }
 

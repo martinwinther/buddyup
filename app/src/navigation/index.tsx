@@ -14,6 +14,8 @@ import SignInEmail from '../screens/Auth/SignInEmail';
 import StepProfile from '../screens/Onboarding/StepProfile';
 import StepCategories from '../screens/Onboarding/StepCategories';
 import Finish from '../screens/Onboarding/Finish';
+import Matches from '../screens/Messages/Matches';
+import Chat from '../screens/Messages/Chat';
 
 const AuthStack = createNativeStackNavigator<RootStackParamList>();
 const OnboardingStack = createNativeStackNavigator<RootStackParamList>();
@@ -122,6 +124,8 @@ function MainStackNavigator() {
     >
       <MainStack.Screen name={Routes.Discover} component={Discover} />
       <MainStack.Screen name={Routes.Home} component={Home} />
+      <MainStack.Screen name={Routes.Matches} component={Matches} />
+      <MainStack.Screen name={Routes.Chat} component={Chat} />
     </MainStack.Navigator>
   );
 }
