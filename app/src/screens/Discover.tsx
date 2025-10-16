@@ -78,7 +78,7 @@ export default function Discover() {
 
   return (
     <View className="flex-1 bg-[#0a0a0a]">
-      <TopBar onPressRight={() => nav.navigate('Matches')} />
+      <TopBar onPressLeft={() => nav.navigate('Settings')} onPressRight={() => nav.navigate('Matches')} />
 
       <View className="flex-1 items-center justify-center">
         <SwipeDeck ref={deckRef} candidates={candidates} onSwipe={handleSwipe} />
