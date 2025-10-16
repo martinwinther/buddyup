@@ -57,10 +57,7 @@ export default function EditProfile() {
 
     // Try upload to Supabase Storage → get public URL
     try {
-      const { data: s } = await supabase.auth.getSession();
-      const uid = s?.session?.user?.id;
-      if (!uid) throw new Error('NO_SESSION');
-      const url = await uploadProfilePhotoFromUri(uri, uid);
+      const url = await uploadProfilePhotoFromUri(uri);
       if (!url) throw new Error('UPLOAD_FAILED');
       setPhotoUrl(url);
     } catch (e: any) {

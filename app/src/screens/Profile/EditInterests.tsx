@@ -49,7 +49,12 @@ export default function EditInterests() {
   const save = async () => {
     try {
       setSaving(true);
-      await repo.saveMine(Array.from(picked.values()));
+      const userCategories = Array.from(picked.values()).map(choice => ({
+        category_id: choice.id,
+        intensity: choice.intensity,
+        active: choice.active,
+      }));
+      await repo.saveMine(userCategories);
       alert('Saved interests');
     } finally {
       setSaving(false);

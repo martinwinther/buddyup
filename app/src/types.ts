@@ -31,5 +31,8 @@ export type RootStackParamList = {
   OnboardingFinish: undefined;
   Matches: undefined;
   Chat: { matchId: string; otherId?: string; name?: string };
+  Settings: undefined;
+  EditProfile: undefined;
+  EditInterests: undefined;
 };
 
