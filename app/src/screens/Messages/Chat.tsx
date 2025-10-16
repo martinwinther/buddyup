@@ -1,10 +1,12 @@
 import React from 'react';
 import { View, Text, FlatList, TextInput, Pressable, KeyboardAvoidingView, Platform } from 'react-native';
-import { useRoute } from '@react-navigation/native';
+import { useRoute, useFocusEffect } from '@react-navigation/native';
 import { MessagesRepository, type ChatMessage } from '../../features/messages/MessagesRepository';
+import { ReadsRepository } from '../../features/messages/ReadsRepository';
 import { supabase } from '../../lib/supabase';
 
 const repo = new MessagesRepository();
+const reads = new ReadsRepository();
 
 export default function Chat() {
   const route = useRoute<any>();
@@ -25,10 +27,25 @@ export default function Chat() {
       setMessages(list);
       unSub = repo.subscribe(matchId, (msg) => {
         setMessages(prev => [...prev, msg]);
+        if (msg.sender_id !== meRef.current) reads.markRead(matchId);
       });
     })();
     return () => unSub();
   }, [matchId]);
+
+  const meRef = React.useRef<string | null>(null);
+  React.useEffect(() => { meRef.current = me; }, [me]);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      reads.markRead(matchId);
+      return () => {};
+    }, [matchId])
+  );
+
+  React.useEffect(() => {
+    if (messages.length) reads.markRead(matchId);
+  }, [messages.length, matchId]);
 
   const send = async () => {
     const trimmed = input.trim();
@@ -37,6 +54,7 @@ export default function Chat() {
       setSending(true);
       setInput('');
       await repo.send(matchId, trimmed);
+      await reads.markRead(matchId);
     } finally {
       setSending(false);
     }

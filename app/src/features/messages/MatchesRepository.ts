@@ -1,4 +1,5 @@
 import { supabase } from '../../lib/supabase';
+import { ReadsRepository } from './ReadsRepository';
 
 export type MatchListItem = {
   matchId: string;
@@ -11,7 +12,10 @@ export type MatchListItem = {
     created_at: string;
     sender_id: string;
   } | null;
+  unread: boolean;
 };
+
+const readsRepo = new ReadsRepository();
 
 export class MatchesRepository {
   async listMyMatches(): Promise<MatchListItem[]> {
@@ -55,16 +59,28 @@ export class MatchesRepository {
       if (!lastByMatch.has(m.match_id)) lastByMatch.set(m.match_id, m);
     }
 
-    // 4) assemble
+    // 4) fetch last reads for me
+    const lastReads = await readsRepo.getLastReadsForMatches(matchIds);
+
+    // 5) assemble with unread flag
     return matches.map(m => {
       const otherId = m.user_a === me ? m.user_b : m.user_a;
       const prof = profileById.get(otherId);
+      const last = lastByMatch.get(m.id) ?? null;
+
+      const lr = lastReads.get(m.id) ?? null;
+      const unread =
+        !!last &&
+        last.sender_id !== me &&
+        (!lr || new Date(last.created_at).getTime() > new Date(lr).getTime());
+
       return {
         matchId: m.id,
         otherId,
         name: prof?.display_name ?? null,
         photoUrl: prof?.photo_url ?? null,
-        lastMessage: lastByMatch.get(m.id) ?? null,
+        lastMessage: last,
+        unread,
       };
     });
   }

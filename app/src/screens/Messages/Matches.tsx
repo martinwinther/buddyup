@@ -61,9 +61,10 @@ export default function Matches() {
                 {item.lastMessage?.body ?? 'Say hi 👋'}
               </Text>
             </View>
-            <Text className="text-zinc-500 text-xs ml-2">
-              {item.lastMessage ? new Date(item.lastMessage.created_at).toLocaleTimeString() : ''}
-            </Text>
+
+            {item.unread ? (
+              <View className="w-2.5 h-2.5 rounded-full bg-teal-400 ml-2" />
+            ) : null}
           </Pressable>
         )}
       />
