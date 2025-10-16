@@ -96,8 +96,8 @@ export default function Discover() {
       <Modal visible={matchVisible} transparent animationType="fade" onRequestClose={() => setMatchVisible(false)}>
         <View className="flex-1 items-center justify-center bg-black/50">
           <View className="w-[85%] rounded-3xl p-6 bg-zinc-900/90 border border-white/10">
-            <Text className="text-2xl text-teal-200 font-semibold">It's a match!</Text>
-            <Text className="text-zinc-300 mt-2">You both liked each other. Say hi 🎉</Text>
+            <Text className="text-2xl text-teal-200 font-semibold">You liked {lastMatch.otherName}!</Text>
+            <Text className="text-zinc-300 mt-2">Send them a message to start chatting 💬</Text>
             <View className="flex-row gap-3 mt-5">
               <Pressable className="flex-1 px-4 py-3 rounded-2xl bg-white/10 border border-white/10" onPress={() => setMatchVisible(false)}>
                 <Text className="text-center text-zinc-100">Keep swiping</Text>
@@ -117,7 +117,7 @@ export default function Discover() {
                   }
                 }}
               >
-                <Text className="text-center text-zinc-900 font-semibold">Start chat</Text>
+                <Text className="text-center text-zinc-900 font-semibold">Send message</Text>
               </Pressable>
             </View>
           </View>

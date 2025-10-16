@@ -25,21 +25,7 @@ export class SwipesRepository {
 
     if (direction === 'left') return {};
 
-    // 2) if right swipe, check for mutual right
-    const { data: mutual, error: mErr } = await supabase
-      .from('swipes')
-      .select('id')
-      .eq('swiper_id', targetId)
-      .eq('target_id', uid)
-      .eq('direction', 'right')
-      .maybeSingle();
-    if (mErr) {
-      console.warn('[swipes] mutual check error', mErr);
-      return {};
-    }
-    if (!mutual) return {};
-
-    // 3) prevent duplicate matches & get or create matchId
+    // 2) 1-way messaging: create/get a thread row now
     const { data: existing } = await supabase
       .from('matches')
       .select('id')
