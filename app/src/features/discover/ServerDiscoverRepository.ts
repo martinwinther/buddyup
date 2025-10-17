@@ -26,10 +26,10 @@ export type DeckCandidate = {
 
 export class ServerDiscoverRepository {
   async list(max = 200): Promise<DeckCandidate[]> {
-    const { data, error } = await supabase.rpc<ServerCandidate>('discover_candidates', { max_rows: max });
+    const { data, error } = await supabase.rpc('discover_candidates', { max_rows: max });
     if (error) throw error;
 
-    return (data ?? []).map((r) => ({
+    return ((data ?? []) as ServerCandidate[]).map((r: ServerCandidate) => ({
       id: r.id,
       displayName: r.display_name,
       age: r.age,
