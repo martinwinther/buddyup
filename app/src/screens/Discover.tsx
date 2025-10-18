@@ -123,6 +123,13 @@ export default function Discover() {
         <Ionicons name="options-outline" size={18} color="#E5E7EB" />
       </Pressable>
 
+      <Pressable
+        onPress={() => nav.navigate('Likes')}
+        className="absolute right-4 top-28 z-10 px-3 py-2 rounded-xl bg-white/10 border border-white/10"
+      >
+        <Ionicons name="heart-outline" size={18} color="#E5E7EB" />
+      </Pressable>
+
       <View className="flex-1 items-center justify-center">
         <SwipeDeck ref={deckRef} candidates={candidates} onSwipe={handleSwipe} />
       </View>

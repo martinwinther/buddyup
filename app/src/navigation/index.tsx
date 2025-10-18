@@ -19,6 +19,7 @@ import Chat from '../screens/Messages/Chat';
 import Settings from '../screens/Settings/Settings';
 import EditProfile from '../screens/Profile/EditProfile';
 import EditInterests from '../screens/Profile/EditInterests';
+import Likes from '../screens/Likes/Likes';
 
 const AuthStack = createNativeStackNavigator<RootStackParamList>();
 const OnboardingStack = createNativeStackNavigator<RootStackParamList>();
@@ -129,6 +130,7 @@ function MainStackNavigator() {
       <MainStack.Screen name={Routes.Home} component={Home} />
       <MainStack.Screen name={Routes.Matches} component={Matches} />
       <MainStack.Screen name={Routes.Chat} component={Chat} />
+      <MainStack.Screen name="Likes" component={Likes} options={{ headerShown: false }} />
       <MainStack.Screen name="Settings" component={Settings} options={{ headerShown: false }} />
       <MainStack.Screen name="EditProfile" component={EditProfile} options={{ headerShown: false }} />
       <MainStack.Screen name="EditInterests" component={EditInterests} options={{ headerShown: false }} />
