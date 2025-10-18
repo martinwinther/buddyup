@@ -26,11 +26,10 @@ export default function Likes() {
   React.useEffect(() => {
     load();
     const off = repo.subscribeToIncoming(async () => {
-      // naive refresh on any like into me
       const list = await repo.list();
       setItems(list);
     });
-    return () => off();
+    return off;
   }, [load]);
 
   const onLikeBack = async (userId: string) => {
