@@ -1,5 +1,6 @@
 import { supabase } from '../../lib/supabase';
 import { recordSwipe } from '../discover/SwipesRepository';
+import { BlocksRepository } from '../safety/BlocksRepository';
 
 export type LikeItem = {
   userId: string;
@@ -76,7 +77,11 @@ export class LikesRepository {
 
     // newest first by likedAt
     items.sort((a, b) => new Date(b.likedAt).getTime() - new Date(a.likedAt).getTime());
-    return items;
+
+    // 5) filter out blocked users
+    const blocksRepo = new BlocksRepository();
+    const { iBlocked, blockedMe } = await blocksRepo.loadAllRelated();
+    return items.filter(x => !iBlocked.has(x.userId) && !blockedMe.has(x.userId));
   }
 
   /**

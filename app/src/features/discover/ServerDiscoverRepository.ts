@@ -1,4 +1,5 @@
 import { supabase } from '../../lib/supabase';
+import { BlocksRepository } from '../safety/BlocksRepository';
 
 export type ServerCandidate = {
   id: string;
@@ -29,7 +30,7 @@ export class ServerDiscoverRepository {
     const { data, error } = await supabase.rpc('discover_candidates', { max_rows: max });
     if (error) throw error;
 
-    return ((data ?? []) as ServerCandidate[]).map((r: ServerCandidate) => ({
+    const rows = ((data ?? []) as ServerCandidate[]).map((r: ServerCandidate) => ({
       id: r.id,
       displayName: r.display_name,
       age: r.age,
@@ -38,6 +39,10 @@ export class ServerDiscoverRepository {
       score: r.score ?? 0,
       distanceKm: r.distance_km,
     }));
+
+    const br = new BlocksRepository();
+    const { iBlocked, blockedMe } = await br.loadAllRelated();
+    return rows.filter(r => !iBlocked.has(r.id) && !blockedMe.has(r.id));
   }
 }
 

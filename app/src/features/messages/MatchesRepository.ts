@@ -1,5 +1,6 @@
 import { supabase } from '../../lib/supabase';
 import { ReadsRepository } from './ReadsRepository';
+import { BlocksRepository } from '../safety/BlocksRepository';
 
 export type MatchListItem = {
   matchId: string;
@@ -63,7 +64,7 @@ export class MatchesRepository {
     const lastReads = await readsRepo.getLastReadsForMatches(matchIds);
 
     // 5) assemble with unread flag
-    return matches.map(m => {
+    const items = matches.map(m => {
       const otherId = m.user_a === me ? m.user_b : m.user_a;
       const prof = profileById.get(otherId);
       const last = lastByMatch.get(m.id) ?? null;
@@ -83,6 +84,11 @@ export class MatchesRepository {
         unread,
       };
     });
+
+    // 6) filter out blocked users
+    const blocksRepo = new BlocksRepository();
+    const { iBlocked, blockedMe } = await blocksRepo.loadAllRelated();
+    return items.filter(item => !iBlocked.has(item.otherId) && !blockedMe.has(item.otherId));
   }
 }
 

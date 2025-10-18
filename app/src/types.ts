@@ -35,5 +35,6 @@ export type RootStackParamList = {
   Settings: undefined;
   EditProfile: undefined;
   EditInterests: undefined;
+  Report: { targetId: string; name?: string };
 };
 

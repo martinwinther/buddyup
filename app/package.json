@@ -8,7 +8,8 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "seed": "node scripts/seed.mjs",
-    "seed:wipe": "node scripts/wipe-seed.mjs"
+    "seed:wipe": "node scripts/wipe-seed.mjs",
+    "type-check": "tsc --noEmit"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.2",
