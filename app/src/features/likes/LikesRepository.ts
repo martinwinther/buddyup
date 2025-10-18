@@ -129,7 +129,9 @@ export class LikesRepository {
         });
       })
       .subscribe();
-    return () => supabase.removeChannel(ch);
+    return () => {
+      void supabase.removeChannel(ch);
+    };
   }
 }
 
