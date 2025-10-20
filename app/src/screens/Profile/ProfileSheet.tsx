@@ -15,7 +15,20 @@ const likesRepo = new LikesRepository();
 export default function ProfileSheet() {
   const nav = useNavigation<any>();
   const route = useRoute<any>();
-  const { userId, fallback } = route.params as RouteParams;
+  const params = route.params as RouteParams | undefined;
+  
+  if (!params?.userId) {
+    return (
+      <View className="flex-1 bg-[#0a0a0a] items-center justify-center">
+        <Text className="text-zinc-100">Invalid profile</Text>
+        <Pressable onPress={() => nav.goBack()} className="mt-4 px-4 py-2 rounded-xl bg-white/10">
+          <Text className="text-zinc-100">Go back</Text>
+        </Pressable>
+      </View>
+    );
+  }
+  
+  const { userId, fallback } = params;
 
   const [loading, setLoading] = React.useState(true);
   const [d, setD] = React.useState<Awaited<ReturnType<typeof detailsRepo.load>> | null>(null);
@@ -48,8 +61,13 @@ export default function ProfileSheet() {
   const message = async () => {
     try {
       const matchId = await likesRepo.ensureThreadWith(userId);
+      if (!matchId) {
+        Alert.alert('Error', 'Could not create conversation. Please try again.');
+        return;
+      }
       nav.navigate('Chat', { matchId, otherId: userId, name });
     } catch (e: any) {
+      console.error('[ProfileSheet] message error:', e);
       Alert.alert('Error', e.message ?? 'Could not open chat.');
     }
   };
