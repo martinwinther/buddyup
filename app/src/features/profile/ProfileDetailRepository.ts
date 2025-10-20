@@ -13,17 +13,21 @@ export type ProfileDetail = {
 
 export class ProfileDetailRepository {
   async load(otherId: string): Promise<ProfileDetail | null> {
-    const { data: s } = await supabase.auth.getSession();
-    const me = s?.session?.user?.id ?? null;
+    try {
+      const { data: s } = await supabase.auth.getSession();
+      const me = s?.session?.user?.id ?? null;
 
-    // profile
-    const { data: prof, error: pErr } = await supabase
-      .from('profiles')
-      .select('id, display_name, age, bio, photo_url, latitude, longitude')
-      .eq('id', otherId)
-      .maybeSingle();
-    if (pErr) throw pErr;
-    if (!prof) return null;
+      // profile
+      const { data: prof, error: pErr } = await supabase
+        .from('profiles')
+        .select('id, display_name, age, bio, photo_url, latitude, longitude')
+        .eq('id', otherId)
+        .maybeSingle();
+      if (pErr) {
+        console.error('[ProfileDetailRepository] Profile fetch error:', pErr);
+        return null;
+      }
+      if (!prof) return null;
 
     // my location (for distance)
     let meLat: number | null = null;
@@ -38,29 +42,37 @@ export class ProfileDetailRepository {
       meLon = mine?.longitude ?? null;
     }
 
-    // categories for other
-    const { data: otherCats, error: ocErr } = await supabase
-      .from('user_categories')
-      .select('category_id, categories(name)')
-      .eq('user_id', otherId)
-      .order('category_id', { ascending: true });
-    if (ocErr) throw ocErr;
-
-    const categories = (otherCats ?? []).map((r: any) => ({
-      id: r.category_id as number,
-      name: r.categories?.name as string,
-    }));
-
-    // my categories for overlap
-    let mySharedCategoryIds: number[] = [];
-    if (me) {
-      const { data: myCats } = await supabase
+      // categories for other
+      const { data: otherCats, error: ocErr } = await supabase
         .from('user_categories')
-        .select('category_id')
-        .eq('user_id', me);
-      const mySet = new Set((myCats ?? []).map((x) => x.category_id as number));
-      mySharedCategoryIds = categories.filter((c) => mySet.has(c.id)).map((c) => c.id);
-    }
+        .select('category_id, categories(name)')
+        .eq('user_id', otherId)
+        .order('category_id', { ascending: true });
+      if (ocErr) {
+        console.error('[ProfileDetailRepository] Categories fetch error:', ocErr);
+        // Continue without categories
+      }
+
+      const categories = (otherCats ?? []).map((r: any) => ({
+        id: r.category_id as number,
+        name: r.categories?.name as string,
+      }));
+
+      // my categories for overlap
+      let mySharedCategoryIds: number[] = [];
+      if (me) {
+        try {
+          const { data: myCats } = await supabase
+            .from('user_categories')
+            .select('category_id')
+            .eq('user_id', me);
+          const mySet = new Set((myCats ?? []).map((x) => x.category_id as number));
+          mySharedCategoryIds = categories.filter((c) => mySet.has(c.id)).map((c) => c.id);
+        } catch (error) {
+          console.error('[ProfileDetailRepository] My categories fetch error:', error);
+          // Continue without shared categories
+        }
+      }
 
     // distance (client-side quick calc)
     const distKm =
@@ -68,16 +80,20 @@ export class ProfileDetailRepository {
         ? this.kmBetween({ lat: meLat, lon: meLon }, { lat: prof.latitude as number, lon: prof.longitude as number })
         : null;
 
-    return {
-      id: prof.id,
-      display_name: prof.display_name ?? null,
-      age: prof.age ?? null,
-      bio: prof.bio ?? null,
-      photo_url: prof.photo_url ?? null,
-      distance_km: distKm,
-      categories,
-      mySharedCategoryIds,
-    };
+      return {
+        id: prof.id,
+        display_name: prof.display_name ?? null,
+        age: prof.age ?? null,
+        bio: prof.bio ?? null,
+        photo_url: prof.photo_url ?? null,
+        distance_km: distKm,
+        categories,
+        mySharedCategoryIds,
+      };
+    } catch (error) {
+      console.error('[ProfileDetailRepository] Load error:', error);
+      return null;
+    }
   }
 
   private kmBetween(a: { lat: number; lon: number }, b: { lat: number; lon: number }) {

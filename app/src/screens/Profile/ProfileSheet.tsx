@@ -43,6 +43,9 @@ export default function ProfileSheet() {
         setLoading(true);
         const res = await detailsRepo.load(userId);
         setD(res);
+      } catch (error) {
+        console.error('[ProfileSheet] Failed to load profile details:', error);
+        // Continue with fallback data
       } finally {
         setLoading(false);
       }
@@ -71,6 +74,14 @@ export default function ProfileSheet() {
       Alert.alert('Error', e.message ?? 'Could not open chat.');
     }
   };
+
+  if (loading) {
+    return (
+      <View className="flex-1 bg-[#0a0a0a] items-center justify-center">
+        <Text className="text-zinc-100">Loading profile...</Text>
+      </View>
+    );
+  }
 
   return (
     <View className="flex-1 bg-[#0a0a0a]">
