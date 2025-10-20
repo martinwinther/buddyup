@@ -65,11 +65,8 @@ export default function Chat() {
       setSending(true);
       setInput('');
       
-      // For temporary matchIds, just show a message that it's not fully implemented yet
-      if (matchId.startsWith('temp_')) {
-        Alert.alert('Demo Mode', 'Chat functionality is in demo mode. Full messaging will be available once the database is set up.');
-        return;
-      }
+      // For demo mode, we'll try to send but expect it to fail gracefully
+      // The database might not have the proper tables set up yet
       
       // Guard: check if either side blocked the other
       const otherId = (route.params as any)?.otherId as string | undefined;
@@ -81,8 +78,14 @@ export default function Chat() {
         }
       }
       
-      await repo.send(matchId, trimmed);
-      await reads.markRead(matchId);
+      try {
+        await repo.send(matchId, trimmed);
+        await reads.markRead(matchId);
+      } catch (dbError) {
+        console.error('[Chat] Database operation failed:', dbError);
+        Alert.alert('Demo Mode', 'Chat functionality is in demo mode. Full messaging will be available once the database is set up.');
+        return;
+      }
     } catch (error) {
       console.error('[Chat] Send error:', error);
       Alert.alert('Error', 'Could not send message. Please try again.');

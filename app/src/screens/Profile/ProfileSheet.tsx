@@ -65,9 +65,17 @@ export default function ProfileSheet() {
     try {
       console.log('[ProfileSheet] Attempting to create thread with user:', userId);
       
-      // For now, create a simple matchId using the user IDs
-      // This is a temporary solution until the database tables are set up
-      const matchId = `temp_${userId}_${Date.now()}`;
+      // Generate a proper UUID for the temporary matchId
+      // This ensures the database accepts it as a valid UUID
+      const generateUUID = () => {
+        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+          const r = Math.random() * 16 | 0;
+          const v = c === 'x' ? r : (r & 0x3 | 0x8);
+          return v.toString(16);
+        });
+      };
+      
+      const matchId = generateUUID();
       
       console.log('[ProfileSheet] Using temporary matchId:', matchId);
       console.log('[ProfileSheet] Navigating to Chat with:', { matchId, otherId: userId, name });
