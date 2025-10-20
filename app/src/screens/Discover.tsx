@@ -29,6 +29,18 @@ export default function Discover() {
   const showToast = (message: string) => setToast({ visible: true, message });
   const hideToast = () => setToast((t) => ({ ...t, visible: false }));
 
+  const openProfile = (c: DeckCandidate) => {
+    nav.navigate('ProfileSheet', {
+      userId: c.id,
+      fallback: {
+        name: c.displayName,
+        age: c.age,
+        photoUrl: c.photoUrl,
+        distanceKm: c.distanceKm,
+      },
+    });
+  };
+
   const ensureMyLocation = React.useCallback(async () => {
     try {
       const { data: s } = await supabase.auth.getSession();
@@ -131,7 +143,7 @@ export default function Discover() {
       </Pressable>
 
       <View className="flex-1 items-center justify-center">
-        <SwipeDeck ref={deckRef} candidates={candidates} onSwipe={handleSwipe} />
+        <SwipeDeck ref={deckRef} candidates={candidates} onSwipe={handleSwipe} onPress={openProfile} />
       </View>
 
       <ActionBar

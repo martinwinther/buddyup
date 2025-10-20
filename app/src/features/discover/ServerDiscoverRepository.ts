@@ -23,6 +23,7 @@ export type DeckCandidate = {
   photoUrl: string | null;
   score: number;
   distanceKm: number | null;
+  overlapCount: number;
 };
 
 export class ServerDiscoverRepository {
@@ -38,6 +39,7 @@ export class ServerDiscoverRepository {
       photoUrl: r.photo_url,
       score: r.score ?? 0,
       distanceKm: r.distance_km,
+      overlapCount: r.overlap_count ?? 0,
     }));
 
     const br = new BlocksRepository();

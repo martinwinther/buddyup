@@ -5,5 +5,7 @@ export type Candidate = {
   bio: string | null;
   photoUrl: string | null;
   score: number; // overlap points
+  distanceKm: number | null;
+  overlapCount: number;
 };
 

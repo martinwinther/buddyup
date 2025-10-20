@@ -82,6 +82,8 @@ export class CandidatesRepository {
         bio: c.bio ?? null,
         photoUrl: c.photo_url ?? null,
         score,
+        distanceKm: null, // TODO: implement distance calculation
+        overlapCount: score,
       };
     });
 

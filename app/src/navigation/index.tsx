@@ -19,6 +19,7 @@ import Chat from '../screens/Messages/Chat';
 import Settings from '../screens/Settings/Settings';
 import EditProfile from '../screens/Profile/EditProfile';
 import EditInterests from '../screens/Profile/EditInterests';
+import ProfileSheet from '../screens/Profile/ProfileSheet';
 import Likes from '../screens/Likes/Likes';
 import Report from '../screens/Safety/Report';
 
@@ -135,6 +136,7 @@ function MainStackNavigator() {
       <MainStack.Screen name="Settings" component={Settings} options={{ headerShown: false }} />
       <MainStack.Screen name="EditProfile" component={EditProfile} options={{ headerShown: false }} />
       <MainStack.Screen name="EditInterests" component={EditInterests} options={{ headerShown: false }} />
+      <MainStack.Screen name="ProfileSheet" component={ProfileSheet} options={{ headerShown: false }} />
       <MainStack.Screen name="Report" component={Report} options={{ headerShown: false }} />
     </MainStack.Navigator>
   );

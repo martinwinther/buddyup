@@ -16,9 +16,10 @@ export type SwipeDeckRef = { swipeLeft: () => void; swipeRight: () => void; };
 type Props = {
   candidates: Candidate[];
   onSwipe: (id: string, dir: 'left' | 'right') => Promise<{ matched?: boolean } | void>;
+  onPress?: (candidate: Candidate) => void;
 };
 
-const SwipeDeck = forwardRef<SwipeDeckRef, Props>(({ candidates, onSwipe }, ref) => {
+const SwipeDeck = forwardRef<SwipeDeckRef, Props>(({ candidates, onSwipe, onPress }, ref) => {
   const [index, setIndex] = React.useState(0);
   const top = candidates[index];
   const next = candidates[index + 1];
@@ -66,6 +67,19 @@ const SwipeDeck = forwardRef<SwipeDeckRef, Props>(({ candidates, onSwipe }, ref)
     [top?.id]
   );
 
+  const tap = useMemo(
+    () =>
+      Gesture.Tap()
+        .onEnd(() => {
+          if (top && onPress) {
+            runOnJS(onPress)(top);
+          }
+        }),
+    [top?.id, onPress]
+  );
+
+  const composed = useMemo(() => Gesture.Simultaneous(pan, tap), [pan, tap]);
+
   const topStyle = useAnimatedStyle(() => ({
     position: 'absolute',
     width: '100%',
@@ -110,7 +124,7 @@ const SwipeDeck = forwardRef<SwipeDeckRef, Props>(({ candidates, onSwipe }, ref)
         {Card(next, nextStyle)}
 
         {top ? (
-          <GestureDetector gesture={pan}>
+          <GestureDetector gesture={composed}>
             <Animated.View style={[topStyle]}>
               {/* LIKE / NOPE stamps */}
               <Animated.View style={[{ position: 'absolute', top: 24, left: 24, paddingHorizontal: 10, paddingVertical: 6, borderWidth: 3, borderColor: 'rgba(34,197,94,0.9)', borderRadius: 12 }, likeStyle]}>
