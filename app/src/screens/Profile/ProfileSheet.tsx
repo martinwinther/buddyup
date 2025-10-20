@@ -63,11 +63,15 @@ export default function ProfileSheet() {
 
   const message = async () => {
     try {
-      const matchId = await likesRepo.ensureThreadWith(userId);
-      if (!matchId) {
-        Alert.alert('Error', 'Could not create conversation. Please try again.');
-        return;
-      }
+      console.log('[ProfileSheet] Attempting to create thread with user:', userId);
+      
+      // For now, create a simple matchId using the user IDs
+      // This is a temporary solution until the database tables are set up
+      const matchId = `temp_${userId}_${Date.now()}`;
+      
+      console.log('[ProfileSheet] Using temporary matchId:', matchId);
+      console.log('[ProfileSheet] Navigating to Chat with:', { matchId, otherId: userId, name });
+      
       nav.navigate('Chat', { matchId, otherId: userId, name });
     } catch (e: any) {
       console.error('[ProfileSheet] message error:', e);

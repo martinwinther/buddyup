@@ -28,12 +28,17 @@ export default function Chat() {
   React.useEffect(() => {
     let unSub = () => {};
     (async () => {
-      const list = await repo.list(matchId, 100);
-      setMessages(list);
-      unSub = repo.subscribe(matchId, (msg) => {
-        setMessages(prev => [...prev, msg]);
-        if (msg.sender_id !== meRef.current) reads.markRead(matchId);
-      });
+      try {
+        const list = await repo.list(matchId, 100);
+        setMessages(list);
+        unSub = repo.subscribe(matchId, (msg) => {
+          setMessages(prev => [...prev, msg]);
+          if (msg.sender_id !== meRef.current) reads.markRead(matchId);
+        });
+      } catch (error) {
+        console.error('[Chat] Failed to load messages:', error);
+        // Continue with empty messages for now
+      }
     })();
     return () => unSub();
   }, [matchId]);
@@ -56,21 +61,31 @@ export default function Chat() {
     const trimmed = input.trim();
     if (!trimmed) return;
     
-    // Guard: check if either side blocked the other
-    const otherId = (route.params as any)?.otherId as string | undefined;
-    if (otherId) {
-      const blocked = await blocksRepo.isBlockedPair(otherId);
-      if (blocked) {
-        Alert.alert('Blocked', 'Messaging is disabled between you and this user.');
-        return;
-      }
-    }
-    
     try {
       setSending(true);
       setInput('');
+      
+      // For temporary matchIds, just show a message that it's not fully implemented yet
+      if (matchId.startsWith('temp_')) {
+        Alert.alert('Demo Mode', 'Chat functionality is in demo mode. Full messaging will be available once the database is set up.');
+        return;
+      }
+      
+      // Guard: check if either side blocked the other
+      const otherId = (route.params as any)?.otherId as string | undefined;
+      if (otherId) {
+        const blocked = await blocksRepo.isBlockedPair(otherId);
+        if (blocked) {
+          Alert.alert('Blocked', 'Messaging is disabled between you and this user.');
+          return;
+        }
+      }
+      
       await repo.send(matchId, trimmed);
       await reads.markRead(matchId);
+    } catch (error) {
+      console.error('[Chat] Send error:', error);
+      Alert.alert('Error', 'Could not send message. Please try again.');
     } finally {
       setSending(false);
     }
