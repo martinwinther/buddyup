@@ -2,6 +2,12 @@ import { Platform } from 'react-native';
 import { File } from 'expo-file-system';
 import { supabase } from './supabase';
 
+/**
+ * @deprecated
+ * Do not use this to change avatars. Use ProfilePhotosRepository.addFromUri()
+ * and then ProfilePhotosRepository.setPrimary() instead.
+ * This avoids Storage RLS/upsert edge cases on web and native.
+ */
 export async function uploadProfilePhotoFromUri(uri: string) {
   const { data } = await supabase.auth.getSession();
   const uid = data?.session?.user?.id;
@@ -66,6 +72,12 @@ type UploadResult =
   | { ok: true; url: string }
   | { ok: false; reason: 'NO_SESSION' | 'RLS' | 'UPLOAD_FAILED' | 'UNKNOWN' };
 
+/**
+ * @deprecated
+ * Do not use this to change avatars. Use ProfilePhotosRepository.addFromUri()
+ * and then ProfilePhotosRepository.setPrimary() instead.
+ * This avoids Storage RLS/upsert edge cases on web and native.
+ */
 export async function tryUploadProfilePhoto(uri: string): Promise<UploadResult> {
   try {
     const url = await uploadProfilePhotoFromUri(uri);
