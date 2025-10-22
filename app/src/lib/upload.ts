@@ -36,6 +36,32 @@ export async function uploadProfilePhotoFromUri(uri: string) {
   return pub.publicUrl;
 }
 
+/**
+ * Upload a new profile photo and return { publicUrl, path }.
+ * Saves to: profile-photos/profiles/{userId}/{timestamp-rand}.jpg
+ */
+export async function uploadNewProfilePhotoFromUri(uri: string, userId: string) {
+  if (!userId) throw new Error('No user id');
+  // best-effort content-type
+  const contentType = uri.endsWith('.png') ? 'image/png' : 'image/jpeg';
+
+  // Get data as Blob (works on web & native)
+  const res = await fetch(uri);
+  const blob = await res.blob();
+
+  const fileName = `${Date.now()}-${Math.floor(Math.random() * 1e6)}${contentType === 'image/png' ? '.png' : '.jpg'}`;
+  const path = `profiles/${userId}/${fileName}`;
+
+  const { error: upErr } = await supabase
+    .storage
+    .from('profile-photos')
+    .upload(path, blob, { contentType, upsert: false });
+  if (upErr) throw upErr;
+
+  const { data: pub } = supabase.storage.from('profile-photos').getPublicUrl(path);
+  return { publicUrl: pub.publicUrl, path };
+}
+
 type UploadResult =
   | { ok: true; url: string }
   | { ok: false; reason: 'NO_SESSION' | 'RLS' | 'UPLOAD_FAILED' | 'UNKNOWN' };

@@ -1,11 +1,12 @@
 import React from 'react';
-import { View, Text, Pressable, ScrollView, Alert } from 'react-native';
+import { View, Text, Pressable, ScrollView, Alert, Dimensions } from 'react-native';
 import { Image } from 'expo-image';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { ProfileDetailRepository } from '../../features/profile/ProfileDetailRepository';
 import { recordSwipe } from '../../features/discover/SwipesRepository';
 import { LikesRepository } from '../../features/likes/LikesRepository';
+import { ProfilePhotosRepository } from '../../features/profile/ProfilePhotosRepository';
 
 type RouteParams = { userId: string; fallback?: { name?: string | null; age?: number | null; photoUrl?: string | null; distanceKm?: number | null } };
 
@@ -30,6 +31,9 @@ export default function ProfileSheet() {
   
   const { userId, fallback } = params;
 
+  const photosRepo = React.useMemo(() => new ProfilePhotosRepository(), []);
+  const [gallery, setGallery] = React.useState<{ id: string; url: string }[]>([]);
+
   const [loading, setLoading] = React.useState(true);
   const [d, setD] = React.useState<Awaited<ReturnType<typeof detailsRepo.load>> | null>(null);
   const name = d?.display_name ?? fallback?.name ?? 'Buddy';
@@ -51,6 +55,13 @@ export default function ProfileSheet() {
       }
     })();
   }, [userId]);
+
+  React.useEffect(() => {
+    (async () => {
+      const list = await photosRepo.listByUser(userId);
+      setGallery((list ?? []).map(p => ({ id: p.id, url: p.url })));
+    })();
+  }, [userId, photosRepo]);
 
   const like = async () => {
     try {
@@ -115,7 +126,20 @@ export default function ProfileSheet() {
       <ScrollView contentContainerStyle={{ paddingBottom: 28 }}>
         {/* Hero image */}
         <View className="w-full h-[480px] bg-white/5">
-          {photoUrl ? (
+          {gallery.length > 0 ? (
+            <ScrollView
+              horizontal
+              pagingEnabled
+              showsHorizontalScrollIndicator={false}
+              style={{ width: '100%', height: '100%' }}
+            >
+              {gallery.map((g) => (
+                <View key={g.id} style={{ width: Dimensions.get('window').width, height: 480 }}>
+                  <Image source={{ uri: g.url }} style={{ width: '100%', height: '100%' }} contentFit="cover" />
+                </View>
+              ))}
+            </ScrollView>
+          ) : photoUrl ? (
             <Image source={{ uri: photoUrl }} style={{ width: '100%', height: '100%' }} contentFit="cover" />
           ) : (
             <View className="flex-1 items-center justify-center">
