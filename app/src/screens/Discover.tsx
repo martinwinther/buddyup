@@ -159,14 +159,14 @@ export default function Discover() {
 
       <Pressable 
         onPress={() => nav.navigate('DiscoverySettings')} 
-        className="absolute top-8 right-4 z-10 px-3 py-2 rounded-xl bg-white/10 border border-white/10"
+        className="absolute top-24 right-4 z-10 px-3 py-2 rounded-xl bg-white/10 border border-white/10"
       >
         <Ionicons name="options-outline" size={18} color="#E5E7EB" />
       </Pressable>
 
       <Pressable
         onPress={() => nav.navigate('Likes')}
-        className="absolute top-20 right-4 z-10 px-3 py-2 rounded-xl bg-white/10 border border-white/10"
+        className="absolute top-36 right-4 z-10 px-3 py-2 rounded-xl bg-white/10 border border-white/10"
       >
         <Ionicons name="heart-outline" size={18} color="#E5E7EB" />
       </Pressable>
