@@ -157,17 +157,19 @@ export default function Discover() {
     <View className="flex-1 bg-[#0a0a0a]">
       <TopBar onPressLeft={() => nav.navigate('Settings')} onPressRight={() => nav.navigate('Matches')} />
 
-      <View className="absolute top-8 right-4 z-10 gap-2">
-        <Pressable onPress={() => nav.navigate('DiscoverySettings')} className="px-3 py-2 rounded-xl bg-white/10 border border-white/10">
-          <Ionicons name="options-outline" size={18} color="#E5E7EB" />
-        </Pressable>
-        <Pressable
-          onPress={() => nav.navigate('Likes')}
-          className="px-3 py-2 rounded-xl bg-white/10 border border-white/10"
-        >
-          <Ionicons name="heart-outline" size={18} color="#E5E7EB" />
-        </Pressable>
-      </View>
+      <Pressable 
+        onPress={() => nav.navigate('DiscoverySettings')} 
+        className="absolute top-8 right-4 z-10 px-3 py-2 rounded-xl bg-white/10 border border-white/10"
+      >
+        <Ionicons name="options-outline" size={18} color="#E5E7EB" />
+      </Pressable>
+
+      <Pressable
+        onPress={() => nav.navigate('Likes')}
+        className="absolute top-20 right-4 z-10 px-3 py-2 rounded-xl bg-white/10 border border-white/10"
+      >
+        <Ionicons name="heart-outline" size={18} color="#E5E7EB" />
+      </Pressable>
 
       <View className="flex-1 items-center justify-center">
         <SwipeDeck ref={deckRef} candidates={candidates} onSwipe={handleSwipe} onPress={openProfile} />
