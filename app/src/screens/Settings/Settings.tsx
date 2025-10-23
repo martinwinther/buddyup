@@ -6,40 +6,50 @@ import { supabase } from '../../lib/supabase';
 
 export default function Settings() {
   const nav = useNavigation<any>();
+  const [email, setEmail] = React.useState<string | null>(null);
 
-  const signOut = async () => {
-    await supabase.auth.signOut();
-    // nav reset handled by your gate; optional local hint
-  };
-
-  const Row = ({ icon, title, onPress }: { icon: any; title: string; onPress: () => void }) => (
-    <Pressable onPress={onPress} className="flex-row items-center px-4 py-4 border-b border-white/5">
-      {icon}
-      <Text className="text-zinc-100 text-base ml-3">{title}</Text>
-    </Pressable>
-  );
+  React.useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      setEmail(data.user?.email ?? null);
+    });
+  }, []);
 
   return (
-    <View className="flex-1 bg-[#0a0a0a] pt-10">
-      <Text className="text-zinc-400 text-center mb-4">Settings</Text>
+    <View className="flex-1 bg-[#0a0a0a] px-4 pt-10">
+      <View className="flex-row items-center justify-between mb-6">
+        <Text className="text-zinc-100 text-xl">Settings</Text>
+        <Pressable onPress={() => nav.goBack()} className="px-3 py-2 rounded-xl bg-white/10 border border-white/10">
+          <Ionicons name="close" size={18} color="#E5E7EB" />
+        </Pressable>
+      </View>
 
-      <Row
-        icon={<Ionicons name="person-circle-outline" size={22} color="#E5E7EB" />}
-        title="Edit Profile"
-        onPress={() => nav.navigate('EditProfile')}
-      />
-      <Row
-        icon={<Ionicons name="pricetags-outline" size={22} color="#E5E7EB" />}
-        title="Edit Interests"
-        onPress={() => nav.navigate('EditInterests')}
-      />
-      <Row
-        icon={<Ionicons name="log-out-outline" size={22} color="#FCA5A5" />}
-        title="Sign out"
-        onPress={() => signOut()}
-      />
+      {email ? <Text className="text-zinc-400 mb-4">Signed in as {email}</Text> : null}
 
-      {/* If you later add Delete Account, do it via Edge Function; not safe from client */}
+      <View className="gap-3">
+        <Pressable onPress={() => nav.navigate('EditProfile')} className="px-4 py-3 rounded-2xl bg-white/10 border border-white/10 flex-row items-center justify-between">
+          <Text className="text-zinc-100">Edit profile</Text>
+          <Ionicons name="chevron-forward" size={18} color="#E5E7EB" />
+        </Pressable>
+
+        <Pressable onPress={() => nav.navigate('DiscoverySettings')} className="px-4 py-3 rounded-2xl bg-white/10 border border-white/10 flex-row items-center justify-between">
+          <Text className="text-zinc-100">Discovery preferences</Text>
+          <Ionicons name="options-outline" size={18} color="#E5E7EB" />
+        </Pressable>
+
+        <Pressable onPress={() => nav.navigate('BlockedUsers')} className="px-4 py-3 rounded-2xl bg-white/10 border border-white/10 flex-row items-center justify-between">
+          <Text className="text-zinc-100">Blocked users</Text>
+          <Ionicons name="ban-outline" size={18} color="#E5E7EB" />
+        </Pressable>
+      </View>
+
+      <View className="mt-auto mb-6">
+        <Pressable
+          onPress={async () => { await supabase.auth.signOut(); }}
+          className="px-4 py-3 rounded-2xl bg-red-500/90"
+        >
+          <Text className="text-zinc-900 text-center font-semibold">Sign out</Text>
+        </Pressable>
+      </View>
     </View>
   );
 }
