@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, FlatList, Image, Pressable, ActivityIndicator } from 'react-native';
+import { View, Text, FlatList, Pressable, ActivityIndicator } from 'react-native';
+import { Image } from 'expo-image';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { LikesRepository } from '../../features/likes/LikesRepository';
 import { useNavigation } from '@react-navigation/native';
@@ -48,6 +49,7 @@ export default function Likes() {
       <Image
         source={ item.photoUrl ? { uri: item.photoUrl } : require('../../../assets/icon.png') }
         className="w-12 h-12 rounded-full mr-3"
+        contentFit="cover"
       />
       <View className="flex-1">
         <Text className="text-zinc-100 font-medium">

@@ -1,4 +1,6 @@
-import { View, Text, Image, ViewProps } from 'react-native';
+import { View, Text, ViewProps } from 'react-native';
+import { Image } from 'expo-image';
+import { cardShadow } from '../ui/platform';
 
 interface GlassCardProps extends ViewProps {
   title?: string;
@@ -17,14 +19,15 @@ export default function GlassCard({
 }: GlassCardProps) {
   return (
     <View
-      className={`bg-zinc-900/90 rounded-glass-lg border border-white/20 overflow-hidden shadow-lg ${className || ''}`}
+      className={`bg-zinc-900/90 rounded-glass-lg border border-white/20 overflow-hidden ${className || ''}`}
+      style={cardShadow()}
       {...props}
     >
       {imageUrl && (
         <Image
           source={{ uri: imageUrl }}
           className="w-full h-64 rounded-t-glass-lg"
-          resizeMode="cover"
+          contentFit="cover"
         />
       )}
       

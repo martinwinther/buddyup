@@ -7,6 +7,7 @@ import { ProfileDetailRepository } from '../../features/profile/ProfileDetailRep
 import { recordSwipe } from '../../features/discover/SwipesRepository';
 import { LikesRepository } from '../../features/likes/LikesRepository';
 import { ProfilePhotosRepository } from '../../features/profile/ProfilePhotosRepository';
+import { pe } from '../../ui/platform';
 
 type RouteParams = { userId: string; fallback?: { name?: string | null; age?: number | null; photoUrl?: string | null; distanceKm?: number | null } };
 
@@ -109,15 +110,32 @@ export default function ProfileSheet() {
   return (
     <View className="flex-1 bg-[#0a0a0a]">
       {/* Header actions */}
-      <View className="absolute top-10 left-4 right-4 z-10 flex-row justify-between">
-        <Pressable onPress={() => nav.goBack()} className="px-3 py-2 rounded-xl bg-white/10 border border-white/10">
-          <Ionicons name="chevron-down" size={18} color="#E5E7EB" />
-        </Pressable>
-        <View className="flex-row gap-2">
-          <Pressable onPress={like} className="px-3 py-2 rounded-xl bg-white/10 border border-white/10">
+      <View className="absolute top-10 left-4 right-4 z-10 flex-row justify-between" {...pe('box-none')}>
+        <View {...pe('auto')}>
+          <Pressable 
+            onPress={() => nav.goBack()} 
+            hitSlop={8}
+            android_ripple={{ color: 'rgba(255,255,255,0.15)', borderless: true }}
+            className="px-3 py-2 rounded-xl bg-white/10 border border-white/10"
+          >
+            <Ionicons name="chevron-down" size={18} color="#E5E7EB" />
+          </Pressable>
+        </View>
+        <View className="flex-row gap-2" {...pe('auto')}>
+          <Pressable 
+            onPress={like} 
+            hitSlop={8}
+            android_ripple={{ color: 'rgba(255,255,255,0.15)', borderless: true }}
+            className="px-3 py-2 rounded-xl bg-white/10 border border-white/10"
+          >
             <Ionicons name="heart" size={18} color="#34D399" />
           </Pressable>
-          <Pressable onPress={message} className="px-3 py-2 rounded-xl bg-teal-500/90">
+          <Pressable 
+            onPress={message} 
+            hitSlop={8}
+            android_ripple={{ color: 'rgba(255,255,255,0.15)', borderless: true }}
+            className="px-3 py-2 rounded-xl bg-teal-500/90"
+          >
             <Ionicons name="chatbubble-ellipses-outline" size={18} color="#0A0A0A" />
           </Pressable>
         </View>

@@ -11,6 +11,7 @@ import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/nativ
 import Ionicons from '@expo/vector-icons/Ionicons';
 import * as Location from 'expo-location';
 import { supabase } from '../lib/supabase';
+import { pe } from '../ui/platform';
 
 const swipesRepo = new SwipesRepository();
 const prefsRepo = new DiscoveryPrefsRepository();
@@ -157,19 +158,31 @@ export default function Discover() {
     <View className="flex-1 bg-[#0a0a0a]">
       <TopBar onPressLeft={() => nav.navigate('Settings')} onPressRight={() => nav.navigate('Matches')} />
 
-      <Pressable 
-        onPress={() => nav.navigate('DiscoverySettings')} 
-        className="absolute top-24 right-4 z-10 px-3 py-2 rounded-xl bg-white/10 border border-white/10"
-      >
-        <Ionicons name="options-outline" size={18} color="#E5E7EB" />
-      </Pressable>
+      <View className="absolute top-24 right-4 z-10" {...pe('box-none')}>
+        <View {...pe('auto')}>
+          <Pressable 
+            onPress={() => nav.navigate('DiscoverySettings')} 
+            hitSlop={8}
+            android_ripple={{ color: 'rgba(255,255,255,0.15)', borderless: true }}
+            className="px-3 py-2 rounded-xl bg-white/10 border border-white/10"
+          >
+            <Ionicons name="options-outline" size={18} color="#E5E7EB" />
+          </Pressable>
+        </View>
+      </View>
 
-      <Pressable
-        onPress={() => nav.navigate('Likes')}
-        className="absolute top-36 right-4 z-10 px-3 py-2 rounded-xl bg-white/10 border border-white/10"
-      >
-        <Ionicons name="heart-outline" size={18} color="#E5E7EB" />
-      </Pressable>
+      <View className="absolute top-36 right-4 z-10" {...pe('box-none')}>
+        <View {...pe('auto')}>
+          <Pressable
+            onPress={() => nav.navigate('Likes')}
+            hitSlop={8}
+            android_ripple={{ color: 'rgba(255,255,255,0.15)', borderless: true }}
+            className="px-3 py-2 rounded-xl bg-white/10 border border-white/10"
+          >
+            <Ionicons name="heart-outline" size={18} color="#E5E7EB" />
+          </Pressable>
+        </View>
+      </View>
 
       <View className="flex-1 items-center justify-center">
         <SwipeDeck ref={deckRef} candidates={candidates} onSwipe={handleSwipe} onPress={openProfile} />

@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TextInput, Pressable, Alert, ScrollView } from 'react-native';
+import { View, Text, TextInput, Pressable, Alert, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useNavigation } from '@react-navigation/native';
 import PhotoGridManager from '../../components/PhotoGridManager';
@@ -70,7 +70,8 @@ export default function EditProfile() {
   }
 
   return (
-    <ScrollView className="flex-1 bg-[#0a0a0a]" contentContainerStyle={{ padding: 16 }}>
+    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
+      <ScrollView className="flex-1 bg-[#0a0a0a]" contentContainerStyle={{ padding: 16 }}>
       <View className="flex-row items-center justify-between mb-4">
         <Text className="text-zinc-100 text-lg">Edit profile</Text>
         <Pressable onPress={() => nav.goBack()} className="px-3 py-2 rounded-xl bg-white/10 border border-white/10">
@@ -114,7 +115,8 @@ export default function EditProfile() {
       <Pressable onPress={save} disabled={saving} className="mt-6 px-4 py-3 rounded-2xl bg-teal-500/90">
         <Text className="text-zinc-900 text-center font-semibold">{saving ? 'Saving…' : 'Save changes'}</Text>
       </Pressable>
-    </ScrollView>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 

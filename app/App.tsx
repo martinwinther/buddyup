@@ -4,6 +4,7 @@ import 'react-native-reanimated';
 import React from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { SafeAreaView, View } from 'react-native';
 import { AuthProvider, useAuth } from './src/contexts/AuthContext';
 import { OnboardingProvider } from './src/contexts/OnboardingContext';
 import { CategoriesProvider } from './src/features/categories/CategoriesProvider';
@@ -37,14 +38,18 @@ function AppProviders({ children }: { children: React.ReactNode }) {
 export default function App() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <AuthProvider>
-        <AppProviders>
-          <ResponsiveContainer>
-            <Navigation />
-            <StatusBar style="light" />
-          </ResponsiveContainer>
-        </AppProviders>
-      </AuthProvider>
+      <View style={{ flex: 1, backgroundColor: '#0a0a0a' }}>
+        <SafeAreaView style={{ flex: 1 }}>
+          <AuthProvider>
+            <AppProviders>
+              <ResponsiveContainer>
+                <Navigation />
+              </ResponsiveContainer>
+            </AppProviders>
+          </AuthProvider>
+        </SafeAreaView>
+      </View>
+      <StatusBar style="light" />
     </GestureHandlerRootView>
   );
 }

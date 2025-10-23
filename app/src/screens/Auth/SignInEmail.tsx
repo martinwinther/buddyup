@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, Alert, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useAuth } from '../../contexts/AuthContext';
@@ -41,7 +41,9 @@ export default function SignInEmail() {
   };
 
   return (
-    <View className="flex-1 bg-[#0a0a0a] px-6 justify-center">
+    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
+      <ScrollView contentContainerStyle={{ flex: 1, justifyContent: 'center' }}>
+        <View className="flex-1 bg-[#0a0a0a] px-6 justify-center">
       <View className="mb-8">
         <Text className="text-white text-4xl font-bold mb-2">Welcome back</Text>
         <Text className="text-white/60 text-lg mt-4">
@@ -96,7 +98,9 @@ export default function SignInEmail() {
           </TouchableOpacity>
         </View>
       </View>
-    </View>
+        </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 

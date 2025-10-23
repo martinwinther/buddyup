@@ -28,8 +28,8 @@ module.exports = {
         system: ['-apple-system', 'BlinkMacSystemFont', 'SF Pro Display', 'system-ui', 'sans-serif'],
       },
       borderRadius: {
-        glass: '20px',
-        'glass-lg': '24px',
+        glass: 20,
+        'glass-lg': 24,
       },
     },
   },

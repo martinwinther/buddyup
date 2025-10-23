@@ -1,6 +1,7 @@
 import React from 'react';
 import { Image } from 'expo-image';
 import { View, Text, StyleSheet } from 'react-native';
+import { cardShadow } from '../../ui/platform';
 
 type Props = {
   name: string | null;
@@ -12,7 +13,7 @@ type Props = {
 
 export default function CandidateCard({ name, age, bio, photoUrl, shared }: Props) {
   return (
-    <View className="flex-1 rounded-3xl overflow-hidden bg-zinc-900/60 border border-white/10">
+    <View className="flex-1 rounded-3xl overflow-hidden bg-zinc-900/60 border border-white/10" style={cardShadow()}>
       {photoUrl ? (
         <Image
           source={{ uri: photoUrl }}

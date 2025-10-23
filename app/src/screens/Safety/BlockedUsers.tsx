@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, Pressable, Alert, FlatList } from 'react-native';
+import { Image } from 'expo-image';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useNavigation } from '@react-navigation/native';
 import { supabase } from '../../lib/supabase';
@@ -77,8 +78,7 @@ export default function BlockedUsers() {
                 {/* small avatar circle */}
                 <View className="w-10 h-10 rounded-full bg-white/10 items-center justify-center overflow-hidden">
                   {item.photo_url ? (
-                    // Using Image from react-native is fine for small avatars
-                    <img src={item.photo_url} style={{ width: 40, height: 40, objectFit: 'cover' }} />
+                    <Image source={{ uri: item.photo_url }} style={{ width: 40, height: 40 }} contentFit="cover" />
                   ) : (
                     <Ionicons name="person-circle-outline" size={24} color="#9CA3AF" />
                   )}

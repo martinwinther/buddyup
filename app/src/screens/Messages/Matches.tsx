@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, FlatList, Image, Pressable, ActivityIndicator } from 'react-native';
+import { View, Text, FlatList, Pressable, ActivityIndicator } from 'react-native';
+import { Image } from 'expo-image';
 import { MatchesRepository } from '../../features/messages/MatchesRepository';
 import { useNavigation } from '@react-navigation/native';
 
@@ -54,6 +55,7 @@ export default function Matches() {
             <Image
               source={ item.photoUrl ? { uri: item.photoUrl } : require('../../../assets/icon.png') }
               className="w-12 h-12 rounded-full mr-3"
+              contentFit="cover"
             />
             <View className="flex-1">
               <Text className="text-zinc-100 text-base font-medium">{item.name ?? 'Buddy'}</Text>

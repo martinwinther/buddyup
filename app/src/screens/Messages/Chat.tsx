@@ -7,6 +7,7 @@ import { ReadsRepository } from '../../features/messages/ReadsRepository';
 import { ThreadReadsRepository } from '../../features/messages/ThreadReadsRepository';
 import { BlocksRepository } from '../../features/safety/BlocksRepository';
 import { supabase } from '../../lib/supabase';
+import { pe } from '../../ui/platform';
 
 const repo = new MessagesRepository();
 const reads = new ReadsRepository();
@@ -132,14 +133,22 @@ export default function Chat() {
   return (
     <KeyboardAvoidingView behavior={Platform.select({ ios: 'padding', android: undefined })} className="flex-1 bg-[#0a0a0a]">
       <View className="flex-1 pt-6">
-        <View className="absolute right-4 top-8 z-10">
-          <Pressable onPress={() => setMenuOpen(v => !v)} className="px-3 py-2 rounded-xl bg-white/10 border border-white/10">
-            <Ionicons name="ellipsis-horizontal" size={18} color="#E5E7EB" />
-          </Pressable>
+        <View className="absolute right-4 top-8 z-10" {...pe('box-none')}>
+          <View {...pe('auto')}>
+            <Pressable 
+              onPress={() => setMenuOpen(v => !v)} 
+              hitSlop={8}
+              android_ripple={{ color: 'rgba(255,255,255,0.15)', borderless: true }}
+              className="px-3 py-2 rounded-xl bg-white/10 border border-white/10"
+            >
+              <Ionicons name="ellipsis-horizontal" size={18} color="#E5E7EB" />
+            </Pressable>
+          </View>
         </View>
 
         {menuOpen ? (
-          <View className="absolute right-4 top-16 z-10 rounded-xl border border-white/10 bg-[#0b0b0b]">
+          <View className="absolute right-4 top-16 z-10 rounded-xl border border-white/10 bg-[#0b0b0b]" {...pe('box-none')}>
+            <View {...pe('auto')}>
             <Pressable
               onPress={async () => {
                 setMenuOpen(false);
@@ -163,6 +172,7 @@ export default function Chat() {
             >
               <Text className="text-zinc-100">Report user</Text>
             </Pressable>
+            </View>
           </View>
         ) : null}
 
