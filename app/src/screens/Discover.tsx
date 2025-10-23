@@ -158,28 +158,28 @@ export default function Discover() {
     <View className="flex-1 bg-[#0a0a0a]">
       <TopBar onPressLeft={() => nav.navigate('Settings')} onPressRight={() => nav.navigate('Matches')} />
 
-      <View className="absolute top-24 right-4 z-10" {...pe('box-none')}>
+      <View className="absolute top-20 right-2 z-10" {...pe('box-none')}>
         <View {...pe('auto')}>
           <Pressable 
             onPress={() => nav.navigate('DiscoverySettings')} 
             hitSlop={8}
             android_ripple={{ color: 'rgba(255,255,255,0.15)', borderless: true }}
-            className="px-3 py-2 rounded-xl bg-white/10 border border-white/10"
+            className="px-2 py-1.5 rounded-lg bg-black/30 border border-white/20"
           >
-            <Ionicons name="options-outline" size={18} color="#E5E7EB" />
+            <Ionicons name="options-outline" size={16} color="#E5E7EB" />
           </Pressable>
         </View>
       </View>
 
-      <View className="absolute top-36 right-4 z-10" {...pe('box-none')}>
+      <View className="absolute top-32 right-2 z-10" {...pe('box-none')}>
         <View {...pe('auto')}>
           <Pressable
             onPress={() => nav.navigate('Likes')}
             hitSlop={8}
             android_ripple={{ color: 'rgba(255,255,255,0.15)', borderless: true }}
-            className="px-3 py-2 rounded-xl bg-white/10 border border-white/10"
+            className="px-2 py-1.5 rounded-lg bg-black/30 border border-white/20"
           >
-            <Ionicons name="heart-outline" size={18} color="#E5E7EB" />
+            <Ionicons name="heart-outline" size={16} color="#E5E7EB" />
           </Pressable>
         </View>
       </View>

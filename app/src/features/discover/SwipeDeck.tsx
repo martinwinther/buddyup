@@ -130,7 +130,7 @@ const SwipeDeck = forwardRef<SwipeDeckRef, Props>(({ candidates, onSwipe, onPres
               <Animated.View style={[{ position: 'absolute', top: 24, left: 24, paddingHorizontal: 10, paddingVertical: 6, borderWidth: 3, borderColor: 'rgba(34,197,94,0.9)', borderRadius: 12 }, likeStyle]}>
                 <Text style={{ color: 'rgb(34,197,94)', fontSize: 18, fontWeight: '900', letterSpacing: 2 }}>LIKE</Text>
               </Animated.View>
-              <Animated.View style={[{ position: 'absolute', top: 24, right: 24, paddingHorizontal: 10, paddingVertical: 6, borderWidth: 3, borderColor: 'rgba(239,68,68,0.9)', borderRadius: 12 }, nopeStyle]}>
+              <Animated.View style={[{ position: 'absolute', top: 24, right: 60, paddingHorizontal: 10, paddingVertical: 6, borderWidth: 3, borderColor: 'rgba(239,68,68,0.9)', borderRadius: 12 }, nopeStyle]}>
                 <Text style={{ color: 'rgb(239,68,68)', fontSize: 18, fontWeight: '900', letterSpacing: 2 }}>NOPE</Text>
               </Animated.View>
 
