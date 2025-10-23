@@ -1,5 +1,6 @@
 import { supabase } from '../../lib/supabase';
 import { ReadsRepository } from './ReadsRepository';
+import { ThreadReadsRepository } from './ThreadReadsRepository';
 import { BlocksRepository } from '../safety/BlocksRepository';
 
 export type MatchListItem = {
@@ -7,16 +8,23 @@ export type MatchListItem = {
   otherId: string;
   name: string | null;
   photoUrl: string | null;
-  lastMessage?: {
-    id: string;
-    body: string;
-    created_at: string;
-    sender_id: string;
-  } | null;
-  unread: boolean;
+  lastMessage?: { body: string; at: string; fromMe: boolean } | null;
+  unread?: number;
 };
 
 const readsRepo = new ReadsRepository();
+const threadReadsRepo = new ThreadReadsRepository();
+
+async function lastMessageFor(matchId: string) {
+  const { data, error } = await supabase
+    .from('messages')
+    .select('id, body, sender_id, created_at')
+    .eq('match_id', matchId)
+    .order('created_at', { ascending: false })
+    .limit(1);
+  if (error) throw error;
+  return data?.[0] ?? null;
+}
 
 export class MatchesRepository {
   async listMyMatches(): Promise<MatchListItem[]> {
@@ -45,50 +53,36 @@ export class MatchesRepository {
 
     const profileById = new Map(profs?.map(p => [p.id, p]) ?? []);
 
-    // 3) fetch latest messages for these matches in one go and pick the most recent per match
-    const matchIds = matches.map(m => m.id);
-    const { data: msgs, error: msgErr } = await supabase
-      .from('messages')
-      .select('id, match_id, sender_id, body, created_at')
-      .in('match_id', matchIds)
-      .order('created_at', { ascending: false })
-      .limit(500); // enough to capture last per thread in dev
-    if (msgErr) throw msgErr;
-
-    const lastByMatch = new Map<string, any>();
-    for (const m of msgs ?? []) {
-      if (!lastByMatch.has(m.match_id)) lastByMatch.set(m.match_id, m);
-    }
-
-    // 4) fetch last reads for me
-    const lastReads = await readsRepo.getLastReadsForMatches(matchIds);
-
-    // 5) assemble with unread flag
+    // 3) assemble basic match data
     const items = matches.map(m => {
       const otherId = m.user_a === me ? m.user_b : m.user_a;
       const prof = profileById.get(otherId);
-      const last = lastByMatch.get(m.id) ?? null;
-
-      const lr = lastReads.get(m.id) ?? null;
-      const unread =
-        !!last &&
-        last.sender_id !== me &&
-        (!lr || new Date(last.created_at).getTime() > new Date(lr).getTime());
-
       return {
         matchId: m.id,
         otherId,
         name: prof?.display_name ?? null,
         photoUrl: prof?.photo_url ?? null,
-        lastMessage: last,
-        unread,
       };
     });
 
-    // 6) filter out blocked users
+    // 4) filter out blocked users first
     const blocksRepo = new BlocksRepository();
     const { iBlocked, blockedMe } = await blocksRepo.loadAllRelated();
-    return items.filter(item => !iBlocked.has(item.otherId) && !blockedMe.has(item.otherId));
+    const filteredItems = items.filter(item => !iBlocked.has(item.otherId) && !blockedMe.has(item.otherId));
+
+    // 5) enhance with last message and unread counts
+    const enhanced = [];
+    for (const m of filteredItems) {
+      const last = await lastMessageFor(m.matchId);
+      enhanced.push({
+        ...m,
+        lastMessage: last ? { body: last.body as string, at: last.created_at as string, fromMe: last.sender_id === me } : null,
+      });
+    }
+
+    // 6) fetch unread counts with the new repo
+    const unread = await threadReadsRepo.unreadCounts(enhanced.map(e => e.matchId));
+    return enhanced.map(e => ({ ...e, unread: unread[e.matchId] ?? 0 }));
   }
 }
 

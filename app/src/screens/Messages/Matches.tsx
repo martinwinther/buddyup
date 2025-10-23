@@ -57,13 +57,18 @@ export default function Matches() {
             />
             <View className="flex-1">
               <Text className="text-zinc-100 text-base font-medium">{item.name ?? 'Buddy'}</Text>
-              <Text className="text-zinc-400 text-sm" numberOfLines={1}>
-                {item.lastMessage?.body ?? 'Say hi 👋'}
-              </Text>
+              {item.lastMessage ? (
+                <Text numberOfLines={1} className="text-zinc-400 text-xs mt-0.5">
+                  {item.lastMessage.fromMe ? 'You: ' : ''}{item.lastMessage.body}
+                </Text>
+              ) : (
+                <Text className="text-zinc-500 text-xs mt-0.5">Say hi 👋</Text>
+              )}
             </View>
-
-            {item.unread ? (
-              <View className="w-2.5 h-2.5 rounded-full bg-teal-400 ml-2" />
+            {(item.unread ?? 0) > 0 ? (
+              <View className="px-2 py-0.5 rounded-full bg-teal-500/90 ml-2 self-center">
+                <Text className="text-black text-xs font-semibold">{item.unread}</Text>
+              </View>
             ) : null}
           </Pressable>
         )}

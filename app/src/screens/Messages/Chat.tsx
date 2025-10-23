@@ -4,11 +4,13 @@ import { useRoute, useFocusEffect, useNavigation } from '@react-navigation/nativ
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { MessagesRepository, type ChatMessage } from '../../features/messages/MessagesRepository';
 import { ReadsRepository } from '../../features/messages/ReadsRepository';
+import { ThreadReadsRepository } from '../../features/messages/ThreadReadsRepository';
 import { BlocksRepository } from '../../features/safety/BlocksRepository';
 import { supabase } from '../../lib/supabase';
 
 const repo = new MessagesRepository();
 const reads = new ReadsRepository();
+const readsRepo = new ThreadReadsRepository();
 const blocksRepo = new BlocksRepository();
 
 export default function Chat() {
@@ -20,42 +22,64 @@ export default function Chat() {
   const [input, setInput] = React.useState('');
   const [sending, setSending] = React.useState(false);
   const [menuOpen, setMenuOpen] = React.useState(false);
+  const scrollRef = React.useRef<FlatList | null>(null);
 
   React.useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setMe(data.session?.user?.id ?? null));
   }, []);
 
   React.useEffect(() => {
-    let unSub = () => {};
     (async () => {
       try {
         const list = await repo.list(matchId, 100);
         setMessages(list);
-        unSub = repo.subscribe(matchId, (msg) => {
-          setMessages(prev => [...prev, msg]);
-          if (msg.sender_id !== meRef.current) reads.markRead(matchId);
-        });
       } catch (error) {
         console.error('[Chat] Failed to load messages:', error);
         // Continue with empty messages for now
       }
     })();
-    return () => unSub();
+  }, [matchId]);
+
+  // Subscribe to realtime inserts for this match
+  React.useEffect(() => {
+    if (!matchId) return;
+    const channel = supabase
+      .channel(`messages:match:${matchId}`)
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'messages', filter: `match_id=eq.${matchId}` },
+        (payload) => {
+          const row = payload.new as any;
+          // Append if not already in list
+          setMessages((prev) => {
+            if (prev.some((m) => m.id === row.id)) return prev;
+            const next = [...prev, row].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+            // scroll to bottom after tick
+            setTimeout(() => scrollRef.current?.scrollToEnd?.({ animated: true }), 0);
+            return next;
+          });
+          // If the incoming message is from the other user, refresh read state
+          readsRepo.markRead(matchId).catch(() => {});
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [matchId]);
 
   const meRef = React.useRef<string | null>(null);
   React.useEffect(() => { meRef.current = me; }, [me]);
 
+  // Auto-mark read on focus
   useFocusEffect(
     React.useCallback(() => {
-      reads.markRead(matchId);
-      return () => {};
+      if (matchId) readsRepo.markRead(matchId).catch(() => {});
+      return () => {}; // no-op on blur
     }, [matchId])
   );
 
-  React.useEffect(() => {
-    if (messages.length) reads.markRead(matchId);
-  }, [messages.length, matchId]);
 
   const send = async () => {
     const trimmed = input.trim();
@@ -80,7 +104,7 @@ export default function Chat() {
       
       try {
         await repo.send(matchId, trimmed);
-        await reads.markRead(matchId);
+        await readsRepo.markRead(matchId);
       } catch (dbError) {
         console.error('[Chat] Database operation failed:', dbError);
         Alert.alert('Demo Mode', 'Chat functionality is in demo mode. Full messaging will be available once the database is set up.');
@@ -144,6 +168,7 @@ export default function Chat() {
 
         <Text className="text-center text-zinc-300 mb-2">{name ?? 'Chat'}</Text>
         <FlatList
+          ref={scrollRef}
           data={messages}
           keyExtractor={m => m.id}
           renderItem={renderItem}
