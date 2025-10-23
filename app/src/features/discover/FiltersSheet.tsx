@@ -90,7 +90,12 @@ export default function FiltersSheet({ visible, onClose, onApply, initial }: Pro
                 className="flex-row items-center gap-3 py-3"
               >
                 <View className={`w-10 h-6 rounded-full ${onlyShared ? 'bg-teal-500/80' : 'bg-white/10'}`}>
-                  <View className={`w-5 h-5 mt-0.5 rounded-full bg-white translate-x-${onlyShared ? '[22px]' : '[2px]'}`} />
+                  <View 
+                    className="w-5 h-5 mt-0.5 rounded-full bg-white" 
+                    style={{ 
+                      transform: [{ translateX: onlyShared ? 22 : 2 }] 
+                    }} 
+                  />
                 </View>
                 <Text className="text-zinc-200">Only show profiles sharing at least one of my interests</Text>
               </Pressable>

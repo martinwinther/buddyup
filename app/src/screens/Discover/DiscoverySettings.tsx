@@ -80,7 +80,12 @@ export default function DiscoverySettings() {
         className="mt-6 flex-row items-center gap-2"
       >
         <View className={`w-10 h-6 rounded-full ${prefs.only_shared_categories ? 'bg-teal-500/80' : 'bg-white/10'}`}>
-          <View className={`w-5 h-5 mt-0.5 rounded-full bg-white translate-x-${prefs.only_shared_categories ? '[22px]' : '[2px]'}`} />
+          <View 
+            className="w-5 h-5 mt-0.5 rounded-full bg-white" 
+            style={{ 
+              transform: [{ translateX: prefs.only_shared_categories ? 22 : 2 }] 
+            }} 
+          />
         </View>
         <Text className="text-zinc-300">Only show profiles sharing at least one of my interests</Text>
       </Pressable>
