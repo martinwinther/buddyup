@@ -22,6 +22,7 @@ import EditInterests from '../screens/Profile/EditInterests';
 import ProfileSheet from '../screens/Profile/ProfileSheet';
 import Likes from '../screens/Likes/Likes';
 import Report from '../screens/Safety/Report';
+import DiscoverySettings from '../screens/Discover/DiscoverySettings';
 
 const AuthStack = createNativeStackNavigator<RootStackParamList>();
 const OnboardingStack = createNativeStackNavigator<RootStackParamList>();
@@ -138,6 +139,7 @@ function MainStackNavigator() {
       <MainStack.Screen name="EditInterests" component={EditInterests} options={{ headerShown: false }} />
       <MainStack.Screen name="ProfileSheet" component={ProfileSheet} options={{ headerShown: false }} />
       <MainStack.Screen name="Report" component={Report} options={{ headerShown: false }} />
+      <MainStack.Screen name="DiscoverySettings" component={DiscoverySettings} options={{ headerShown: false }} />
     </MainStack.Navigator>
   );
 }

@@ -20,13 +20,13 @@ export default function FiltersSheet({ visible, onClose, onApply, initial }: Pro
   const [ageMin, setAgeMin] = React.useState(initial.age_min);
   const [ageMax, setAgeMax] = React.useState(initial.age_max);
   const [maxKm, setMaxKm] = React.useState<number | null>(initial.max_km);
-  const [boost, setBoost] = React.useState<number[]>(initial.boosted_category_ids);
+  const [onlyShared, setOnlyShared] = React.useState<boolean>(initial.only_shared_categories);
 
   React.useEffect(() => {
     setAgeMin(initial.age_min);
     setAgeMax(initial.age_max);
     setMaxKm(initial.max_km);
-    setBoost(initial.boosted_category_ids);
+    setOnlyShared(initial.only_shared_categories);
   }, [initial]);
 
   React.useEffect(() => {
@@ -36,20 +36,13 @@ export default function FiltersSheet({ visible, onClose, onApply, initial }: Pro
     })();
   }, []);
 
-  const toggleBoost = (id: number) => {
-    setBoost(prev => {
-      if (prev.includes(id)) return prev.filter(x => x !== id);
-      if (prev.length >= 3) return prev;
-      return [...prev, id];
-    });
-  };
 
   const apply = async () => {
     const prefs: DiscoveryPrefs = {
       age_min: Math.min(ageMin, ageMax),
       age_max: Math.max(ageMin, ageMax),
       max_km: maxKm,
-      boosted_category_ids: boost,
+      only_shared_categories: onlyShared,
     };
     onApply(prefs);
     onClose();
@@ -89,20 +82,18 @@ export default function FiltersSheet({ visible, onClose, onApply, initial }: Pro
               <Slider minimumValue={1} maximumValue={200} step={1} value={maxKm ?? 50} onValueChange={v => setMaxKm(Array.isArray(v) ? v[0] : v)} />
             </View>
 
-            {/* Category boosts */}
+            {/* Only shared categories */}
             <View className="mb-2">
-              <Text className="text-zinc-400 mb-2">Boosted categories (up to 3)</Text>
-              <View className="flex-row flex-wrap gap-2">
-                {allCats.map(c => {
-                  const on = boost.includes(c.id);
-                  return (
-                    <Pressable key={c.id} onPress={() => toggleBoost(c.id)}
-                      className={`px-3 py-2 rounded-xl border ${on ? 'bg-teal-500/20 border-teal-400' : 'bg-white/5 border-white/10'}`}>
-                      <Text className={on ? 'text-teal-200' : 'text-zinc-200'}>{c.name}</Text>
-                    </Pressable>
-                  );
-                })}
-              </View>
+              <Text className="text-zinc-400 mb-2">Filter preferences</Text>
+              <Pressable
+                onPress={() => setOnlyShared(!onlyShared)}
+                className="flex-row items-center gap-3 py-3"
+              >
+                <View className={`w-10 h-6 rounded-full ${onlyShared ? 'bg-teal-500/80' : 'bg-white/10'}`}>
+                  <View className={`w-5 h-5 mt-0.5 rounded-full bg-white translate-x-${onlyShared ? '[22px]' : '[2px]'}`} />
+                </View>
+                <Text className="text-zinc-200">Only show profiles sharing at least one of my interests</Text>
+              </Pressable>
             </View>
           </ScrollView>
 

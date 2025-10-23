@@ -6,9 +6,8 @@ import SwipeDeck, { type SwipeDeckRef } from '../features/discover/SwipeDeck';
 import ActionBar from '../features/discover/ActionBar';
 import TopBar from '../components/TopBar';
 import InlineToast from '../components/InlineToast';
-import FiltersSheet from '../features/discover/FiltersSheet';
 import { DiscoveryPrefs, DiscoveryPrefsRepository } from '../features/discover/DiscoveryPrefsRepository';
-import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import * as Location from 'expo-location';
 import { supabase } from '../lib/supabase';
@@ -18,16 +17,42 @@ const prefsRepo = new DiscoveryPrefsRepository();
 
 export default function Discover() {
   const nav = useNavigation<any>();
+  const route = useRoute<any>();
   const deckRef = React.useRef<SwipeDeckRef>(null);
   const serverRepo = React.useMemo(() => new ServerDiscoverRepository(), []);
   const [loading, setLoading] = React.useState(true);
   const [candidates, setCandidates] = React.useState<DeckCandidate[]>([]);
   const [toast, setToast] = React.useState<{ visible: boolean; message: string }>({ visible: false, message: '' });
-  const [prefs, setPrefs] = React.useState<DiscoveryPrefs>({ age_min: 18, age_max: 60, max_km: 50, boosted_category_ids: [] });
-  const [filtersOpen, setFiltersOpen] = React.useState(false);
+  const [prefs, setPrefs] = React.useState<DiscoveryPrefs | null>(null);
 
   const showToast = (message: string) => setToast({ visible: true, message });
   const hideToast = () => setToast((t) => ({ ...t, visible: false }));
+
+  function applyPrefs(candidates: DeckCandidate[], p: DiscoveryPrefs | null): DeckCandidate[] {
+    if (!p) return candidates;
+    let list = candidates;
+
+    // Age filter
+    list = list.filter(c => {
+      const a = c.age ?? 0;
+      return a >= p.age_min && a <= p.age_max;
+    });
+
+    // Distance filter
+    if (p.max_km != null) {
+      list = list.filter(c => {
+        if (c.distanceKm == null) return true; // unknown distance, keep
+        return c.distanceKm <= p.max_km!;
+      });
+    }
+
+    // Shared categories (we exposed overlapCount earlier)
+    if (p.only_shared_categories) {
+      list = list.filter(c => (c.overlapCount ?? 0) > 0);
+    }
+
+    return list;
+  }
 
   const openProfile = (c: DeckCandidate) => {
     nav.navigate('ProfileSheet', {
@@ -65,8 +90,10 @@ export default function Discover() {
   const load = React.useCallback(async () => {
     setLoading(true);
     try {
-      const rows = await serverRepo.list(200);
-      setCandidates(rows);
+      const raw = await serverRepo.list(200);
+      const p = await prefsRepo.load();
+      setPrefs(p);
+      setCandidates(applyPrefs(raw, p));
     } finally {
       setLoading(false);
     }
@@ -76,12 +103,14 @@ export default function Discover() {
     ensureMyLocation();
   }, [ensureMyLocation]);
 
+  // Refresh on return: watch route params and reload deck when refresh changes
   React.useEffect(() => {
-    (async () => {
-      const p = await prefsRepo.get();
-      setPrefs(p);
-    })();
-  }, []);
+    if (route.params?.refresh) {
+      prefsRepo.load().then(setPrefs);
+      // also re-fetch deck
+      load();
+    }
+  }, [route.params?.refresh, load]);
 
   useFocusEffect(
     React.useCallback(() => {
@@ -128,16 +157,15 @@ export default function Discover() {
     <View className="flex-1 bg-[#0a0a0a]">
       <TopBar onPressLeft={() => nav.navigate('Settings')} onPressRight={() => nav.navigate('Matches')} />
 
-      <Pressable
-        onPress={() => setFiltersOpen(true)}
-        className="absolute right-4 top-16 z-10 px-3 py-2 rounded-xl bg-white/10 border border-white/10"
-      >
-        <Ionicons name="options-outline" size={18} color="#E5E7EB" />
-      </Pressable>
+      <View className="absolute top-8 right-4 z-10">
+        <Pressable onPress={() => nav.navigate('DiscoverySettings')} className="px-3 py-2 rounded-xl bg-white/10 border border-white/10">
+          <Ionicons name="options-outline" size={18} color="#E5E7EB" />
+        </Pressable>
+      </View>
 
       <Pressable
         onPress={() => nav.navigate('Likes')}
-        className="absolute right-4 top-28 z-10 px-3 py-2 rounded-xl bg-white/10 border border-white/10"
+        className="absolute right-4 top-20 z-10 px-3 py-2 rounded-xl bg-white/10 border border-white/10"
       >
         <Ionicons name="heart-outline" size={18} color="#E5E7EB" />
       </Pressable>
@@ -154,15 +182,6 @@ export default function Discover() {
         onBoost={() => {}}
       />
 
-      <FiltersSheet
-        visible={filtersOpen}
-        onClose={() => setFiltersOpen(false)}
-        initial={prefs}
-        onApply={(p) => {
-          setPrefs(p);
-          load();
-        }}
-      />
 
       <InlineToast
         message={toast.message}
