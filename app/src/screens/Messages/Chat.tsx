@@ -166,13 +166,15 @@ export default function Chat() {
           </View>
         ) : null}
 
-        <Text className="text-center text-zinc-300 mb-2">{name ?? 'Chat'}</Text>
+        <View className="px-4 py-3 border-b border-white/5">
+          <Text className="text-center text-zinc-300 text-lg font-medium">{name ?? 'Chat'}</Text>
+        </View>
         <FlatList
           ref={scrollRef}
           data={messages}
           keyExtractor={m => m.id}
           renderItem={renderItem}
-          contentContainerStyle={{ paddingVertical: 8 }}
+          contentContainerStyle={{ paddingVertical: 16, paddingHorizontal: 8 }}
           onContentSizeChange={() => {}}
         />
       </View>
