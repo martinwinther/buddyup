@@ -11,6 +11,7 @@ import { SupabaseCategoriesRepository } from './src/features/categories/Supabase
 import { PersistenceProvider } from './src/features/onboarding/persistence';
 import { SupabaseOnboardingPersistence } from './src/features/onboarding/persistence';
 import Navigation from './src/navigation';
+import ResponsiveContainer from './src/components/ResponsiveContainer';
 
 function AppProviders({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
@@ -38,8 +39,10 @@ export default function App() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <AuthProvider>
         <AppProviders>
-          <Navigation />
-          <StatusBar style="light" />
+          <ResponsiveContainer>
+            <Navigation />
+            <StatusBar style="light" />
+          </ResponsiveContainer>
         </AppProviders>
       </AuthProvider>
     </GestureHandlerRootView>
