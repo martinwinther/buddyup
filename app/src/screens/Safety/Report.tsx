@@ -26,7 +26,7 @@ export default function Report() {
       setSaving(true);
       await repo.submit(targetId, reason, details.trim() || undefined);
       Alert.alert('Thanks', 'Your report has been submitted.');
-      nav.goBack();
+      nav.navigate('Discover');
     } catch (e: any) {
       Alert.alert('Error', e.message ?? 'Could not submit report.');
     } finally {

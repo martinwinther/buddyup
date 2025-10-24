@@ -5,11 +5,19 @@ type Json = Record<string, unknown>;
 
 Deno.serve(async (req) => {
   try {
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const anonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+    const supabaseUrl =
+      Deno.env.get('SUPABASE_URL') ?? Deno.env.get('EXPO_PUBLIC_SUPABASE_URL')!;
+    const anonKey =
+      Deno.env.get('SUPABASE_ANON_KEY') ?? Deno.env.get('EXPO_PUBLIC_SUPABASE_ANON_KEY')!;
     const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     if (!supabaseUrl || !anonKey || !serviceKey) {
-      return new Response(JSON.stringify({ error: 'Missing env: SUPABASE_URL/ANON_KEY/SERVICE_ROLE_KEY' }), { status: 500 });
+      return new Response(
+        JSON.stringify({
+          error:
+            'Missing env: SUPABASE_URL|EXPO_PUBLIC_SUPABASE_URL / SUPABASE_ANON_KEY|EXPO_PUBLIC_SUPABASE_ANON_KEY / SUPABASE_SERVICE_ROLE_KEY',
+        }),
+        { status: 500 }
+      );
     }
 
     const authHeader = req.headers.get('Authorization') || '';

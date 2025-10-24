@@ -34,7 +34,7 @@ export default function ReportUser() {
         await repo.block(otherId);
       }
       Alert.alert('Thank you', 'Your report has been submitted.');
-      nav.goBack();
+      nav.navigate('Discover');
     } catch (e: any) {
       Alert.alert('Error', e.message ?? 'Could not submit report.');
     } finally {
@@ -79,7 +79,10 @@ export default function ReportUser() {
         className="mt-6 flex-row items-center gap-2"
       >
         <View className={`w-10 h-6 rounded-full ${alsoBlock ? 'bg-teal-500/80' : 'bg-white/10'}`}>
-          <View className={`w-5 h-5 mt-0.5 rounded-full bg-white translate-x-${alsoBlock ? '[22px]' : '[2px]'}`} />
+          <View 
+            className="w-5 h-5 mt-0.5 rounded-full bg-white" 
+            style={{ transform: [{ translateX: alsoBlock ? 18 : 2 }] }}
+          />
         </View>
         <Text className="text-zinc-300">Also block this user</Text>
       </Pressable>
