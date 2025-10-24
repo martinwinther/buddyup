@@ -22,6 +22,7 @@ import EditInterests from '../screens/Profile/EditInterests';
 import ProfileSheet from '../screens/Profile/ProfileSheet';
 import Likes from '../screens/Likes/Likes';
 import Report from '../screens/Safety/Report';
+import ReportUser from '../screens/Safety/ReportUser';
 import BlockedUsers from '../screens/Safety/BlockedUsers';
 import DiscoverySettings from '../screens/Discover/DiscoverySettings';
 import LikedYou from '../screens/Discover/LikedYou';
@@ -141,6 +142,7 @@ function MainStackNavigator() {
       <MainStack.Screen name="EditInterests" component={EditInterests} options={{ headerShown: false }} />
       <MainStack.Screen name="ProfileSheet" component={ProfileSheet} options={{ headerShown: false }} />
       <MainStack.Screen name="Report" component={Report} options={{ headerShown: false }} />
+      <MainStack.Screen name="ReportUser" component={ReportUser} options={{ headerShown: false }} />
       <MainStack.Screen name="BlockedUsers" component={BlockedUsers} options={{ headerShown: false }} />
       <MainStack.Screen name="DiscoverySettings" component={DiscoverySettings} options={{ headerShown: false }} />
       <MainStack.Screen name="LikedYou" component={LikedYou} options={{ headerShown: false }} />

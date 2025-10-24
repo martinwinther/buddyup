@@ -166,7 +166,7 @@ export default function Chat() {
               onPress={() => {
                 setMenuOpen(false);
                 const otherId = (route.params as any)?.otherId as string | undefined;
-                nav.navigate('Report', { targetId: otherId, name });
+                nav.navigate('ReportUser', { otherId, from: 'chat' });
               }}
               className="px-4 py-3"
             >

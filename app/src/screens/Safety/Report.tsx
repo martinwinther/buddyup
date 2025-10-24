@@ -1,17 +1,23 @@
 import React from 'react';
 import { View, Text, TextInput, Pressable, Alert } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
-import { ReportsRepository } from '../../features/safety/ReportsRepository';
+import { ReportsRepository, ReportReason } from '../../features/safety/ReportsRepository';
 
 const repo = new ReportsRepository();
-const reasons = ['Spam', 'Harassment', 'Inappropriate content', 'Fake profile', 'Other'];
+const reasons: { key: ReportReason; label: string }[] = [
+  { key: 'spam', label: 'Spam' },
+  { key: 'harassment', label: 'Harassment' },
+  { key: 'inappropriate', label: 'Inappropriate content' },
+  { key: 'fake', label: 'Fake profile' },
+  { key: 'other', label: 'Other' },
+];
 
 export default function Report() {
   const nav = useNavigation<any>();
   const route = useRoute<any>();
   const { targetId, name } = route.params as { targetId: string; name?: string };
 
-  const [reason, setReason] = React.useState<string>(reasons[0]);
+  const [reason, setReason] = React.useState<ReportReason>(reasons[0].key);
   const [details, setDetails] = React.useState<string>('');
   const [saving, setSaving] = React.useState(false);
 
@@ -35,9 +41,9 @@ export default function Report() {
 
       <View className="gap-2 mb-4">
         {reasons.map(r => (
-          <Pressable key={r} onPress={() => setReason(r)}
-            className={`px-3 py-2 rounded-xl border ${reason === r ? 'border-teal-400 bg-teal-500/10' : 'border-white/10 bg-white/5'}`}>
-            <Text className={reason === r ? 'text-teal-200' : 'text-zinc-200'}>{r}</Text>
+          <Pressable key={r.key} onPress={() => setReason(r.key)}
+            className={`px-3 py-2 rounded-xl border ${reason === r.key ? 'border-teal-400 bg-teal-500/10' : 'border-white/10 bg-white/5'}`}>
+            <Text className={reason === r.key ? 'text-teal-200' : 'text-zinc-200'}>{r.label}</Text>
           </Pressable>
         ))}
       </View>

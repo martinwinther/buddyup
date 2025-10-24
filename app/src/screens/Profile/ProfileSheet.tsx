@@ -200,6 +200,19 @@ export default function ProfileSheet() {
               </View>
             </View>
           ) : null}
+
+          {/* Report button */}
+          <Pressable
+            onPress={() => nav.navigate('ReportUser', { otherId: userId, from: 'profile' })}
+            className="mt-6 px-3 py-2 rounded-2xl bg-white/10 border border-white/10 self-start"
+            hitSlop={8}
+            android_ripple={{ color: 'rgba(255,255,255,0.15)', borderless: false }}
+          >
+            <View className="flex-row items-center gap-2">
+              <Ionicons name="flag-outline" size={16} color="#FCA5A5" />
+              <Text className="text-red-300">Report</Text>
+            </View>
+          </Pressable>
         </View>
       </ScrollView>
     </View>

@@ -37,6 +37,7 @@ export type RootStackParamList = {
   EditInterests: undefined;
   ProfileSheet: { userId: string; fallback?: { name?: string | null; age?: number | null; photoUrl?: string | null; distanceKm?: number | null } };
   Report: { targetId: string; name?: string };
+  ReportUser: { otherId: string; from?: 'profile' | 'chat' };
   BlockedUsers: undefined;
   DiscoverySettings: undefined;
   LikedYou: undefined;
