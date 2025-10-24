@@ -24,6 +24,7 @@ import Likes from '../screens/Likes/Likes';
 import Report from '../screens/Safety/Report';
 import BlockedUsers from '../screens/Safety/BlockedUsers';
 import DiscoverySettings from '../screens/Discover/DiscoverySettings';
+import LikedYou from '../screens/Discover/LikedYou';
 
 const AuthStack = createNativeStackNavigator<RootStackParamList>();
 const OnboardingStack = createNativeStackNavigator<RootStackParamList>();
@@ -142,6 +143,7 @@ function MainStackNavigator() {
       <MainStack.Screen name="Report" component={Report} options={{ headerShown: false }} />
       <MainStack.Screen name="BlockedUsers" component={BlockedUsers} options={{ headerShown: false }} />
       <MainStack.Screen name="DiscoverySettings" component={DiscoverySettings} options={{ headerShown: false }} />
+      <MainStack.Screen name="LikedYou" component={LikedYou} options={{ headerShown: false }} />
     </MainStack.Navigator>
   );
 }

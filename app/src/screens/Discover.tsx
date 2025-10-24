@@ -174,7 +174,7 @@ export default function Discover() {
       <View className="absolute top-32 right-2 z-10" {...pe('box-none')}>
         <View {...pe('auto')}>
           <Pressable
-            onPress={() => nav.navigate('Likes')}
+            onPress={() => nav.navigate('LikedYou')}
             hitSlop={8}
             android_ripple={{ color: 'rgba(255,255,255,0.15)', borderless: true }}
             className="px-2 py-1.5 rounded-lg bg-black/30 border border-white/20"

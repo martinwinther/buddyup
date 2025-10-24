@@ -39,5 +39,6 @@ export type RootStackParamList = {
   Report: { targetId: string; name?: string };
   BlockedUsers: undefined;
   DiscoverySettings: undefined;
+  LikedYou: undefined;
 };
 
