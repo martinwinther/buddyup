@@ -5,7 +5,7 @@ import Animated, {
   useSharedValue, useAnimatedStyle, withSpring, withTiming, runOnJS, interpolate, Extrapolate
 } from 'react-native-reanimated';
 import CandidateCard from './CandidateCard';
-import type { Candidate } from './types';
+import type { Candidate } from './SupabaseDiscoverRepository';
 
 const { width } = Dimensions.get('window');
 const SWIPE_OUT = Math.min(120, width * 0.28);
@@ -108,11 +108,12 @@ const SwipeDeck = forwardRef<SwipeDeckRef, Props>(({ candidates, onSwipe, onPres
     c ? (
       <Animated.View style={style}>
         <CandidateCard
-          name={c.displayName}
+          name={c.display_name}
           age={c.age}
           bio={c.bio}
-          photoUrl={c.photoUrl}
-          shared={c.score}
+          photoUrl={c.photo_url}
+          shared={c.overlap_count}
+          distanceKm={c.distance_km}
         />
       </Animated.View>
     ) : null;
@@ -135,11 +136,12 @@ const SwipeDeck = forwardRef<SwipeDeckRef, Props>(({ candidates, onSwipe, onPres
               </Animated.View>
 
               <CandidateCard
-                name={top.displayName}
+                name={top.display_name}
                 age={top.age}
                 bio={top.bio}
-                photoUrl={top.photoUrl}
-                shared={top.score}
+                photoUrl={top.photo_url}
+                shared={top.overlap_count}
+                distanceKm={top.distance_km}
               />
             </Animated.View>
           </GestureDetector>

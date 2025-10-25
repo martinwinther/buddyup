@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, Pressable, ActivityIndicator } from 'react-native';
-import { ServerDiscoverRepository, type DeckCandidate } from '../features/discover/ServerDiscoverRepository';
+import { SupabaseDiscoverRepository, type Candidate } from '../features/discover/SupabaseDiscoverRepository';
 import { SwipesRepository } from '../features/discover/SwipesRepository';
 import SwipeDeck, { type SwipeDeckRef } from '../features/discover/SwipeDeck';
 import ActionBar from '../features/discover/ActionBar';
@@ -20,49 +20,48 @@ export default function Discover() {
   const nav = useNavigation<any>();
   const route = useRoute<any>();
   const deckRef = React.useRef<SwipeDeckRef>(null);
-  const serverRepo = React.useMemo(() => new ServerDiscoverRepository(), []);
+  const repo = React.useMemo(() => new SupabaseDiscoverRepository(), []);
+  const [cards, setCards] = React.useState<Candidate[]>([]);
   const [loading, setLoading] = React.useState(true);
-  const [candidates, setCandidates] = React.useState<DeckCandidate[]>([]);
+  const [offset, setOffset] = React.useState(0);
   const [toast, setToast] = React.useState<{ visible: boolean; message: string }>({ visible: false, message: '' });
   const [prefs, setPrefs] = React.useState<DiscoveryPrefs | null>(null);
+  const PAGE = 30;
 
   const showToast = (message: string) => setToast({ visible: true, message });
   const hideToast = () => setToast((t) => ({ ...t, visible: false }));
 
-  function applyPrefs(candidates: DeckCandidate[], p: DiscoveryPrefs | null): DeckCandidate[] {
-    if (!p) return candidates;
-    let list = candidates;
+  const loadPage = React.useCallback(async (fresh = false) => {
+    setLoading(true);
+    try {
+      const nextOffset = fresh ? 0 : offset;
+      const result = await repo.page(PAGE, nextOffset);
+      setCards((prev) => fresh ? result : [...prev, ...result]);
+      setOffset((o) => fresh ? result.length : o + result.length);
+    } finally {
+      setLoading(false);
+    }
+  }, [repo, offset]);
 
-    // Age filter
-    list = list.filter(c => {
-      const a = c.age ?? 0;
-      return a >= p.age_min && a <= p.age_max;
+  const onCardConsumed = React.useCallback(() => {
+    setCards((prev) => {
+      const next = prev.slice(1);
+      if (next.length < 5 && !loading) {
+        // fire and forget; no double fetch guard needed for simplicity
+        loadPage(false);
+      }
+      return next;
     });
+  }, [loadPage, loading]);
 
-    // Distance filter
-    if (p.max_km != null) {
-      list = list.filter(c => {
-        if (c.distanceKm == null) return true; // unknown distance, keep
-        return c.distanceKm <= p.max_km!;
-      });
-    }
-
-    // Shared categories (we exposed overlapCount earlier)
-    if (p.only_shared_categories) {
-      list = list.filter(c => (c.overlapCount ?? 0) > 0);
-    }
-
-    return list;
-  }
-
-  const openProfile = (c: DeckCandidate) => {
+  const openProfile = (c: Candidate) => {
     nav.navigate('ProfileSheet', {
       userId: c.id,
       fallback: {
-        name: c.displayName,
+        name: c.display_name,
         age: c.age,
-        photoUrl: c.photoUrl,
-        distanceKm: c.distanceKm,
+        photoUrl: c.photo_url,
+        distanceKm: c.distance_km,
       },
     });
   };
@@ -88,17 +87,9 @@ export default function Discover() {
     } catch {}
   }, []);
 
-  const load = React.useCallback(async () => {
-    setLoading(true);
-    try {
-      const raw = await serverRepo.list(200);
-      const p = await prefsRepo.load();
-      setPrefs(p);
-      setCandidates(applyPrefs(raw, p));
-    } finally {
-      setLoading(false);
-    }
-  }, [serverRepo]);
+  React.useEffect(() => {
+    loadPage(true);
+  }, [loadPage]);
 
   React.useEffect(() => {
     ensureMyLocation();
@@ -109,24 +100,25 @@ export default function Discover() {
     if (route.params?.refresh) {
       prefsRepo.load().then(setPrefs);
       // also re-fetch deck
-      load();
+      loadPage(true);
     }
-  }, [route.params?.refresh, load]);
+  }, [route.params?.refresh, loadPage]);
 
   useFocusEffect(
     React.useCallback(() => {
-      load();
-    }, [load])
+      loadPage(true);
+    }, [loadPage])
   );
 
   const handleSwipe = async (id: string, dir: 'left' | 'right') => {
     try {
       const res = await swipesRepo.recordSwipe(id, dir);
       if (dir === 'right' && res && res.matchId) {
-        const candidate = candidates.find(c => c.id === id);
-        const name = candidate?.displayName;
+        const candidate = cards.find(c => c.id === id);
+        const name = candidate?.display_name;
         showToast(name ? `You can now message ${name}` : 'Added to Messages');
       }
+      onCardConsumed();
     } catch (e) {
       console.warn('[discover] swipe error', e);
       showToast('Something went wrong');
@@ -142,12 +134,12 @@ export default function Discover() {
     );
   }
 
-  if (candidates.length === 0) {
+  if (!loading && cards.length === 0) {
     return (
       <View className="flex-1 items-center justify-center bg-[#0a0a0a]">
         <Text className="text-zinc-100 text-lg">You're all caught up</Text>
         <Text className="text-zinc-400 mt-1">Check back later for new people</Text>
-        <Pressable onPress={load} className="mt-4 px-4 py-2 rounded-xl bg-white/10 border border-white/10">
+        <Pressable onPress={() => loadPage(true)} className="mt-4 px-4 py-2 rounded-xl bg-white/10 border border-white/10">
           <Text className="text-zinc-100">Refresh</Text>
         </Pressable>
       </View>
@@ -185,7 +177,7 @@ export default function Discover() {
       </View>
 
       <View className="flex-1 items-center justify-center">
-        <SwipeDeck ref={deckRef} candidates={candidates} onSwipe={handleSwipe} onPress={openProfile} />
+        <SwipeDeck ref={deckRef} candidates={cards} onSwipe={handleSwipe} onPress={openProfile} />
       </View>
 
       <ActionBar
