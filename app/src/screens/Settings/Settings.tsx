@@ -4,18 +4,46 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { useNavigation } from '@react-navigation/native';
 import { supabase } from '../../lib/supabase';
 import { invokeFunctionJSON } from '../../lib/functions';
+import { SettingsRepository } from '../../features/settings/SettingsRepository';
 
 export default function Settings() {
   const nav = useNavigation<any>();
   const [email, setEmail] = React.useState<string | null>(null);
   const [confirmOpen, setConfirmOpen] = React.useState(false);
   const [deleting, setDeleting] = React.useState(false);
+  const [notifyEmail, setNotifyEmail] = React.useState(false);
+  const [saving, setSaving] = React.useState(false);
+
+  const settingsRepo = React.useMemo(() => new SettingsRepository(), []);
 
   React.useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
       setEmail(data.user?.email ?? null);
     });
   }, []);
+
+  React.useEffect(() => {
+    (async () => {
+      try {
+        const s = await settingsRepo.load();
+        if (s) setNotifyEmail(!!s.notify_email_messages);
+      } catch {}
+    })();
+  }, [settingsRepo]);
+
+  async function toggleNotifyEmail() {
+    try {
+      setSaving(true);
+      const next = !notifyEmail;
+      setNotifyEmail(next);
+      await settingsRepo.update({ notify_email_messages: next });
+    } catch {
+      // revert on failure
+      setNotifyEmail((v) => !v);
+    } finally {
+      setSaving(false);
+    }
+  }
 
   async function confirmDelete() {
     try {
@@ -57,6 +85,24 @@ export default function Settings() {
         <Pressable onPress={() => nav.navigate('BlockedUsers')} className="px-4 py-3 rounded-2xl bg-white/10 border border-white/10 flex-row items-center justify-between">
           <Text className="text-zinc-100">Blocked users</Text>
           <Ionicons name="ban-outline" size={18} color="#E5E7EB" />
+        </Pressable>
+      </View>
+
+      <View className="mt-4 px-4 py-3 rounded-2xl bg-white/5 border border-white/10">
+        <Text className="text-zinc-200 mb-2">Notifications</Text>
+
+        <Pressable
+          onPress={toggleNotifyEmail}
+          disabled={saving}
+          className="flex-row items-center justify-between px-2 py-3"
+        >
+          <View className="flex-1 pr-3">
+            <Text className="text-zinc-100">Email me when I get a new message</Text>
+            <Text className="text-zinc-500 text-xs">You can turn this off anytime</Text>
+          </View>
+          <View className={`w-12 h-7 rounded-full ${notifyEmail ? 'bg-teal-500/80' : 'bg-white/10'}`}>
+            <View className={`w-6 h-6 mt-0.5 rounded-full bg-white ${notifyEmail ? 'ml-6' : 'ml-1'}`} />
+          </View>
         </Pressable>
       </View>
 
