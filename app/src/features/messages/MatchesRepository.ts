@@ -10,6 +10,7 @@ export type MatchListItem = {
   photoUrl: string | null;
   lastMessage?: { body: string; at: string; fromMe: boolean } | null;
   unread?: number;
+  lastActive?: string | null;
 };
 
 const readsRepo = new ReadsRepository();
@@ -44,10 +45,10 @@ export class MatchesRepository {
 
     const otherIds = matches.map(m => (m.user_a === me ? m.user_b : m.user_a));
 
-    // 2) fetch profiles for "others"
+    // 2) fetch profiles for "others" including last_active
     const { data: profs, error: pErr } = await supabase
       .from('profiles')
-      .select('id, display_name, photo_url')
+      .select('id, display_name, photo_url, last_active')
       .in('id', otherIds);
     if (pErr) throw pErr;
 
@@ -62,6 +63,7 @@ export class MatchesRepository {
         otherId,
         name: prof?.display_name ?? null,
         photoUrl: prof?.photo_url ?? null,
+        lastActive: (prof as any)?.last_active ?? null,
       };
     });
 
@@ -83,6 +85,10 @@ export class MatchesRepository {
     // 6) fetch unread counts with the new repo
     const unread = await threadReadsRepo.unreadCounts(enhanced.map(e => e.matchId));
     return enhanced.map(e => ({ ...e, unread: unread[e.matchId] ?? 0 }));
+  }
+
+  async markRead(matchId: string): Promise<void> {
+    await threadReadsRepo.markRead(matchId);
   }
 }
 

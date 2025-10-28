@@ -1,21 +1,30 @@
 import React from 'react';
-import { View, Text, FlatList, Pressable, ActivityIndicator } from 'react-native';
+import { View, Text, FlatList, Pressable, TextInput, RefreshControl } from 'react-native';
 import { Image } from 'expo-image';
-import { MatchesRepository } from '../../features/messages/MatchesRepository';
+import Ionicons from '@expo/vector-icons/Ionicons';
+import { MatchesRepository, type MatchListItem } from '../../features/messages/MatchesRepository';
 import { useNavigation } from '@react-navigation/native';
+import { formatRelative, formatPresence } from '../../lib/time';
 
 const repo = new MatchesRepository();
 
 export default function Matches() {
   const nav = useNavigation<any>();
+  const [items, setItems] = React.useState<MatchListItem[]>([]);
+  const [filtered, setFiltered] = React.useState<MatchListItem[]>([]);
   const [loading, setLoading] = React.useState(true);
-  const [items, setItems] = React.useState<any[]>([]);
+  const [refreshing, setRefreshing] = React.useState(false);
+  const [error, setError] = React.useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = React.useState('');
 
   const load = React.useCallback(async () => {
+    setError(null);
+    setLoading(true);
     try {
-      setLoading(true);
       const list = await repo.listMyMatches();
       setItems(list);
+    } catch (e: any) {
+      setError(e?.message ?? 'Failed to load chats');
     } finally {
       setLoading(false);
     }
@@ -23,58 +32,147 @@ export default function Matches() {
 
   React.useEffect(() => { load(); }, [load]);
 
-  if (loading) {
-    return (
-      <View className="flex-1 items-center justify-center bg-[#0a0a0a]">
-        <ActivityIndicator />
-        <Text className="text-zinc-400 mt-2">Loading matches…</Text>
-      </View>
-    );
-  }
+  const onRefresh = React.useCallback(async () => {
+    setRefreshing(true);
+    await load();
+    setRefreshing(false);
+  }, [load]);
 
-  if (items.length === 0) {
-    return (
-      <View className="flex-1 items-center justify-center bg-[#0a0a0a]">
-        <Text className="text-zinc-100 text-lg">No matches yet</Text>
-        <Text className="text-zinc-400 mt-1">Swipe right to connect</Text>
-      </View>
+  React.useEffect(() => {
+    const needle = searchQuery.trim().toLowerCase();
+    if (!needle) return setFiltered(items);
+    setFiltered(
+      items.filter((item) => {
+        const name = (item.name ?? '').toLowerCase();
+        const msg = (item.lastMessage?.body ?? '').toLowerCase();
+        return name.includes(needle) || msg.includes(needle);
+      })
     );
-  }
+  }, [searchQuery, items]);
+
+  const openChat = async (item: MatchListItem) => {
+    // Optimistically clear unread in UI
+    setItems((prev) => prev.map(i => i.matchId === item.matchId ? { ...i, unread: 0 } : i));
+    try { await repo.markRead(item.matchId); } catch {}
+    nav.navigate('Chat', { matchId: item.matchId, otherId: item.otherId, name: item.name });
+  };
+
+  const renderItem = ({ item }: { item: MatchListItem }) => {
+    const unread = item.unread ?? 0;
+    return (
+      <Pressable
+        onPress={() => openChat(item)}
+        className="flex-row items-center gap-3 px-4 py-3 border-b border-white/5"
+        hitSlop={8}
+        android_ripple={{ color: 'rgba(255,255,255,0.15)' }}
+      >
+        <Image
+          source={item.photoUrl ? { uri: item.photoUrl } : require('../../../assets/icon.png')}
+          className="w-12 h-12 rounded-full"
+          contentFit="cover"
+        />
+
+        <View className="flex-1">
+          <View className="flex-row items-center gap-2">
+            <Text className="text-zinc-100 font-semibold" numberOfLines={1}>
+              {item.name ?? 'Buddy'}
+            </Text>
+            {!!item.lastActive && (
+              <Text className="text-[11px] text-zinc-500" numberOfLines={1}>
+                {formatPresence(item.lastActive)}
+              </Text>
+            )}
+          </View>
+
+          <Text className={`text-sm ${unread > 0 ? 'text-zinc-100' : 'text-zinc-400'}`} numberOfLines={1}>
+            {item.lastMessage ? (
+              <>
+                {item.lastMessage.fromMe ? 'You: ' : ''}{item.lastMessage.body}
+              </>
+            ) : (
+              'Say hi 👋'
+            )}
+          </Text>
+        </View>
+
+        <View className="items-end w-16">
+          <Text className="text-[11px] text-zinc-500">
+            {formatRelative(item.lastMessage?.at)}
+          </Text>
+          {unread > 0 && (
+            <View className="self-end mt-1 min-w-5 px-1 h-5 rounded-full bg-teal-500/90 items-center justify-center">
+              <Text className="text-[11px] text-zinc-900 font-bold">{unread}</Text>
+            </View>
+          )}
+        </View>
+      </Pressable>
+    );
+  };
 
   return (
-    <View className="flex-1 bg-[#0a0a0a] pt-6">
-      <FlatList
-        data={items}
-        keyExtractor={i => i.matchId}
-        ItemSeparatorComponent={() => <View className="h-px bg-white/5 mx-4" />}
-        renderItem={({ item }) => (
-          <Pressable
-            className="flex-row items-center px-4 py-3"
-            onPress={() => nav.navigate('Chat', { matchId: item.matchId, otherId: item.otherId, name: item.name })}
-          >
-            <Image
-              source={ item.photoUrl ? { uri: item.photoUrl } : require('../../../assets/icon.png') }
-              className="w-12 h-12 rounded-full mr-3"
-              contentFit="cover"
-            />
-            <View className="flex-1">
-              <Text className="text-zinc-100 text-base font-medium">{item.name ?? 'Buddy'}</Text>
-              {item.lastMessage ? (
-                <Text numberOfLines={1} className="text-zinc-400 text-xs mt-0.5">
-                  {item.lastMessage.fromMe ? 'You: ' : ''}{item.lastMessage.body}
-                </Text>
-              ) : (
-                <Text className="text-zinc-500 text-xs mt-0.5">Say hi 👋</Text>
-              )}
-            </View>
-            {(item.unread ?? 0) > 0 ? (
-              <View className="px-2 py-0.5 rounded-full bg-teal-500/90 ml-2 self-center">
-                <Text className="text-black text-xs font-semibold">{item.unread}</Text>
-              </View>
-            ) : null}
+    <View className="flex-1 bg-[#0a0a0a]">
+      {/* Header */}
+      <View className="px-4 pt-4 pb-3 border-b border-white/5 gap-3">
+        <View className="flex-row items-center justify-between">
+          <Text className="text-zinc-100 text-lg font-semibold">Chats</Text>
+          <Pressable onPress={onRefresh} className="px-3 py-2 rounded-xl bg-white/10 border border-white/10">
+            <Ionicons name="refresh" size={18} color="#E5E7EB" />
           </Pressable>
-        )}
-      />
+        </View>
+
+        {/* Search */}
+        <View className="flex-row items-center gap-2 px-3 py-2 rounded-xl bg-white/5 border border-white/10">
+          <Ionicons name="search" size={16} color="#A1A1AA" />
+          <TextInput
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            placeholder="Search chats"
+            placeholderTextColor="#7A7A7A"
+            className="flex-1 text-zinc-100"
+            autoCorrect={false}
+            autoCapitalize="none"
+          />
+          {!!searchQuery && (
+            <Pressable onPress={() => setSearchQuery('')}>
+              <Ionicons name="close" size={16} color="#A1A1AA" />
+            </Pressable>
+          )}
+        </View>
+      </View>
+
+      {/* Body */}
+      {loading && items.length === 0 ? (
+        <View className="flex-1 px-4 pt-4">
+          <View className="w-full h-16 rounded-2xl bg-white/5 mb-3" />
+          <View className="w-full h-16 rounded-2xl bg-white/5 mb-3" />
+          <View className="w-full h-16 rounded-2xl bg-white/5" />
+        </View>
+      ) : error ? (
+        <View className="flex-1 items-center justify-center px-6">
+          <Text className="text-zinc-400 text-center mb-3">{error}</Text>
+          <Pressable onPress={onRefresh} className="px-4 py-2 rounded-xl bg-white/10 border border-white/10">
+            <Text className="text-zinc-100">Retry</Text>
+          </Pressable>
+        </View>
+      ) : filtered.length === 0 ? (
+        <View className="flex-1 items-center justify-center px-6">
+          <Text className="text-zinc-400 text-center">
+            {searchQuery ? 'No conversations found.' : 'No matches yet'}
+          </Text>
+          {!searchQuery && (
+            <Text className="text-zinc-500 text-center mt-1">Swipe right to connect</Text>
+          )}
+        </View>
+      ) : (
+        <FlatList
+          data={filtered}
+          keyExtractor={(item) => item.matchId}
+          renderItem={renderItem}
+          refreshControl={<RefreshControl tintColor="#E5E7EB" refreshing={refreshing} onRefresh={onRefresh} />}
+          initialNumToRender={12}
+          removeClippedSubviews
+        />
+      )}
     </View>
   );
 }
