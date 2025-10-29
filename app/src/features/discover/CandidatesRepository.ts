@@ -84,6 +84,7 @@ export class CandidatesRepository {
         score,
         distanceKm: null, // TODO: implement distance calculation
         overlapCount: score,
+        lastActive: (c as any).last_active ?? null,
       };
     });
 

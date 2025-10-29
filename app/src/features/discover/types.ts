@@ -7,5 +7,6 @@ export type Candidate = {
   score: number; // overlap points
   distanceKm: number | null;
   overlapCount: number;
+  lastActive: string | null;
 };
 

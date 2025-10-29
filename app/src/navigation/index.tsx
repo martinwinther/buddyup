@@ -6,6 +6,7 @@ import { useOnboardingPersistence } from '../features/onboarding/persistence';
 import { RootStackParamList } from '../types';
 import SplashScreen from '../components/SplashScreen';
 import { Routes } from './routes';
+import PresenceGate from '../features/presence/PresenceGate';
 
 import Home from '../screens/Home';
 import Discover from '../screens/Discover';
@@ -92,7 +93,12 @@ function AppGate() {
   }
 
   // MAIN vs ONBOARDING — choose after check resolves
-  return completed ? <MainStackNavigator /> : <OnboardingStackNavigator />;
+  return (
+    <>
+      <PresenceGate />
+      {completed ? <MainStackNavigator /> : <OnboardingStackNavigator />}
+    </>
+  );
 }
 
 function AuthStackNavigator() {

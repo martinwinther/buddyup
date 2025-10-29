@@ -24,3 +24,14 @@ export function formatPresence(lastActive?: string | null): string {
   return `${formatRelative(lastActive)} ago`;
 }
 
+export function isOnline(lastActive?: string | null, windowSec = 300): boolean {
+  if (!lastActive) return false;
+  const d = new Date(lastActive).getTime();
+  const diff = Date.now() - d;
+  return diff < windowSec * 1000;
+}
+
+export function formatRelativeTime(iso?: string | null): string {
+  return formatRelative(iso);
+}
+

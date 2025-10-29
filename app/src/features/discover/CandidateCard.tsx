@@ -2,6 +2,7 @@ import React from 'react';
 import { Image } from 'expo-image';
 import { View, Text, StyleSheet } from 'react-native';
 import { cardShadow } from '../../ui/platform';
+import { isOnline, formatRelativeTime } from '../../lib/time';
 
 type Props = {
   name: string | null;
@@ -10,9 +11,14 @@ type Props = {
   photoUrl: string | null;
   shared: number;
   distanceKm?: number | null;
+  lastActive?: string | null;
 };
 
-export default function CandidateCard({ name, age, bio, photoUrl, shared, distanceKm }: Props) {
+export default function CandidateCard({ name, age, bio, photoUrl, shared, distanceKm, lastActive }: Props) {
+  const online = isOnline(lastActive);
+  const presenceText = online ? 'Online' : lastActive ? `Active ${formatRelativeTime(lastActive)} ago` : null;
+  const presenceLabel = online ? 'Online' : lastActive ? `Active ${formatRelativeTime(lastActive)} ago` : '';
+
   return (
     <View className="flex-1 rounded-3xl overflow-hidden bg-zinc-900/60 border border-white/10" style={cardShadow()}>
       {photoUrl ? (
@@ -32,6 +38,14 @@ export default function CandidateCard({ name, age, bio, photoUrl, shared, distan
             {name ?? 'Buddy'}{age ? `, ${age}` : ''}
           </Text>
           {bio ? <Text className="text-zinc-300 mt-0.5" numberOfLines={2}>{bio}</Text> : null}
+          {presenceText && (
+            <Text 
+              className={`text-[11px] ${online ? 'text-teal-400' : 'text-zinc-400'} mt-1`}
+              accessibilityLabel={presenceLabel}
+            >
+              {presenceText}
+            </Text>
+          )}
           <View className="flex-row items-center mt-2 space-x-2">
             {shared > 0 && (
               <View className="px-2 py-1 rounded-full bg-teal-500/20 border border-teal-500/30">

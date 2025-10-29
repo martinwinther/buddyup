@@ -114,6 +114,7 @@ const SwipeDeck = forwardRef<SwipeDeckRef, Props>(({ candidates, onSwipe, onPres
           photoUrl={c.photo_url}
           shared={c.overlap_count}
           distanceKm={c.distance_km}
+          lastActive={c.last_active}
         />
       </Animated.View>
     ) : null;
@@ -142,6 +143,7 @@ const SwipeDeck = forwardRef<SwipeDeckRef, Props>(({ candidates, onSwipe, onPres
                 photoUrl={top.photo_url}
                 shared={top.overlap_count}
                 distanceKm={top.distance_km}
+                lastActive={top.last_active}
               />
             </Animated.View>
           </GestureDetector>
