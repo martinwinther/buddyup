@@ -115,9 +115,14 @@ export default function Matches() {
       <View className="px-4 pt-4 pb-3 border-b border-white/5 gap-3">
         <View className="flex-row items-center justify-between">
           <Text className="text-zinc-100 text-lg font-semibold">Chats</Text>
-          <Pressable onPress={onRefresh} className="px-3 py-2 rounded-xl bg-white/10 border border-white/10">
-            <Ionicons name="refresh" size={18} color="#E5E7EB" />
-          </Pressable>
+          <View className="flex-row gap-2">
+            <Pressable onPress={() => nav.navigate('Likes')} className="px-3 py-2 rounded-xl bg-white/10 border border-white/10" accessibilityLabel="Open likes">
+              <Ionicons name="heart-outline" size={18} color="#E5E7EB" />
+            </Pressable>
+            <Pressable onPress={onRefresh} className="px-3 py-2 rounded-xl bg-white/10 border border-white/10" accessibilityLabel="Refresh chats">
+              <Ionicons name="refresh" size={18} color="#E5E7EB" />
+            </Pressable>
+          </View>
         </View>
 
         {/* Search */}

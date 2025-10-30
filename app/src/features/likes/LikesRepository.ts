@@ -2,6 +2,34 @@ import { supabase } from '../../lib/supabase';
 import { recordSwipe } from '../discover/SwipesRepository';
 import { BlocksRepository } from '../safety/BlocksRepository';
 
+// RPC-based lightweight rows used by Likes screen tabs
+export type LikeRow = {
+  id: string;                 // other user id
+  display_name: string | null;
+  age: number | null;
+  photo_url: string | null;
+  last_active: string | null; // ISO
+  shared_count: number | null;
+};
+
+export async function fetchLikedYou(limit = 25, offset = 0): Promise<LikeRow[]> {
+  const { data, error } = await supabase.rpc('liked_you', { limit, offset });
+  if (error) throw error;
+  return (data as LikeRow[] | null) ?? [];
+}
+
+export async function fetchYouLiked(limit = 25, offset = 0): Promise<LikeRow[]> {
+  const { data, error } = await supabase.rpc('you_liked', { limit, offset });
+  if (error) throw error;
+  return (data as LikeRow[] | null) ?? [];
+}
+
+// Optional helper: like back via RPC (safer than raw insert)
+export async function likeUser(targetId: string) {
+  const { error } = await supabase.rpc('like_user', { target_id: targetId });
+  if (error) throw error;
+}
+
 export type LikeItem = {
   userId: string;
   displayName: string | null;
