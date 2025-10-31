@@ -1,7 +1,6 @@
 import { supabase } from '../../lib/supabase';
-import { ReadsRepository } from './ReadsRepository';
-import { ThreadReadsRepository } from './ThreadReadsRepository';
 import { BlocksRepository } from '../safety/BlocksRepository';
+import { markThreadRead } from './ReadsRepository';
 
 export type MatchListItem = {
   matchId: string;
@@ -12,9 +11,6 @@ export type MatchListItem = {
   unread?: number;
   lastActive?: string | null;
 };
-
-const readsRepo = new ReadsRepository();
-const threadReadsRepo = new ThreadReadsRepository();
 
 async function lastMessageFor(matchId: string) {
   const { data, error } = await supabase
@@ -82,13 +78,8 @@ export class MatchesRepository {
       });
     }
 
-    // 6) fetch unread counts with the new repo
-    const unread = await threadReadsRepo.unreadCounts(enhanced.map(e => e.matchId));
-    return enhanced.map(e => ({ ...e, unread: unread[e.matchId] ?? 0 }));
-  }
-
-  async markRead(matchId: string): Promise<void> {
-    await threadReadsRepo.markRead(matchId);
+    // 6) unread counts are now handled by the Matches screen
+    return enhanced;
   }
 }
 

@@ -2,27 +2,24 @@ import React from 'react';
 import { View, Text, FlatList, TextInput, Pressable, KeyboardAvoidingView, Platform, Alert } from 'react-native';
 import { useRoute, useFocusEffect, useNavigation } from '@react-navigation/native';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { MessagesRepository, type ChatMessage } from '../../features/messages/MessagesRepository';
-import { ReadsRepository } from '../../features/messages/ReadsRepository';
-import { ThreadReadsRepository } from '../../features/messages/ThreadReadsRepository';
+import { MessagesRepository, type ChatMessage, markThreadRead, getOtherLastRead } from '../../features/messages';
 import { BlocksRepository } from '../../features/safety/BlocksRepository';
 import { supabase } from '../../lib/supabase';
 import { pe } from '../../ui/platform';
 
 const repo = new MessagesRepository();
-const reads = new ReadsRepository();
-const readsRepo = new ThreadReadsRepository();
 const blocksRepo = new BlocksRepository();
 
 export default function Chat() {
   const route = useRoute<any>();
   const nav = useNavigation<any>();
-  const { matchId, name } = route.params as { matchId: string; name?: string };
+  const { matchId, otherId, name } = route.params as { matchId: string; otherId?: string; name?: string };
   const [me, setMe] = React.useState<string | null>(null);
   const [messages, setMessages] = React.useState<ChatMessage[]>([]);
   const [input, setInput] = React.useState('');
   const [sending, setSending] = React.useState(false);
   const [menuOpen, setMenuOpen] = React.useState(false);
+  const [otherLastRead, setOtherLastRead] = React.useState<string | null>(null);
   const scrollRef = React.useRef<FlatList | null>(null);
 
   React.useEffect(() => {
@@ -34,16 +31,21 @@ export default function Chat() {
       try {
         const list = await repo.list(matchId, 100);
         setMessages(list);
+        // Load other user's last read time
+        if (otherId) {
+          const lastRead = await getOtherLastRead(otherId);
+          setOtherLastRead(lastRead);
+        }
       } catch (error) {
         console.error('[Chat] Failed to load messages:', error);
         // Continue with empty messages for now
       }
     })();
-  }, [matchId]);
+  }, [matchId, otherId]);
 
   // Subscribe to realtime inserts for this match
   React.useEffect(() => {
-    if (!matchId) return;
+    if (!matchId || !otherId) return;
     const channel = supabase
       .channel(`messages:match:${matchId}`)
       .on(
@@ -60,7 +62,7 @@ export default function Chat() {
             return next;
           });
           // If the incoming message is from the other user, refresh read state
-          readsRepo.markRead(matchId).catch(() => {});
+          markThreadRead(otherId).catch(() => {});
         }
       )
       .subscribe();
@@ -68,7 +70,7 @@ export default function Chat() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [matchId]);
+  }, [matchId, otherId]);
 
   const meRef = React.useRef<string | null>(null);
   React.useEffect(() => { meRef.current = me; }, [me]);
@@ -76,9 +78,13 @@ export default function Chat() {
   // Auto-mark read on focus
   useFocusEffect(
     React.useCallback(() => {
-      if (matchId) readsRepo.markRead(matchId).catch(() => {});
+      if (otherId) {
+        markThreadRead(otherId).catch(() => {});
+        // Also refresh the other user's last read status
+        getOtherLastRead(otherId).then(setOtherLastRead).catch(() => {});
+      }
       return () => {}; // no-op on blur
-    }, [matchId])
+    }, [otherId])
   );
 
 
@@ -105,7 +111,7 @@ export default function Chat() {
       
       try {
         await repo.send(matchId, trimmed);
-        await readsRepo.markRead(matchId);
+        if (otherId) await markThreadRead(otherId);
       } catch (dbError) {
         console.error('[Chat] Database operation failed:', dbError);
         Alert.alert('Demo Mode', 'Chat functionality is in demo mode. Full messaging will be available once the database is set up.');
@@ -119,13 +125,23 @@ export default function Chat() {
     }
   };
 
-  const renderItem = ({ item }: { item: ChatMessage }) => {
+  const renderItem = ({ item, index }: { item: ChatMessage; index: number }) => {
     const mine = item.sender_id === me;
+    
+    // Check if this is the last message I sent
+    const isMyLastMessage = mine && index === messages.length - 1;
+    const showSeen = isMyLastMessage && 
+      otherLastRead && 
+      new Date(otherLastRead).getTime() >= new Date(item.created_at).getTime();
+    
     return (
       <View className={`px-4 my-1 w-full ${mine ? 'items-end' : 'items-start'}`}>
         <View className={`max-w-[80%] px-3 py-2 rounded-2xl ${mine ? 'bg-teal-500/90' : 'bg-white/10 border border-white/10'}`}>
           <Text className={`${mine ? 'text-zinc-900' : 'text-zinc-100'}`}>{item.body}</Text>
         </View>
+        {showSeen && (
+          <Text className="text-[11px] text-zinc-500 mt-0.5">Seen</Text>
+        )}
       </View>
     );
   };
@@ -183,7 +199,7 @@ export default function Chat() {
           ref={scrollRef}
           data={messages}
           keyExtractor={m => m.id}
-          renderItem={renderItem}
+          renderItem={({ item, index }) => renderItem({ item, index })}
           contentContainerStyle={{ paddingVertical: 16, paddingHorizontal: 8 }}
           onContentSizeChange={() => {}}
         />

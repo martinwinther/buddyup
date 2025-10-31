@@ -2,8 +2,8 @@ import React from 'react';
 import { View, Text, FlatList, Pressable, TextInput, RefreshControl } from 'react-native';
 import { Image } from 'expo-image';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { MatchesRepository, type MatchListItem } from '../../features/messages/MatchesRepository';
-import { useNavigation } from '@react-navigation/native';
+import { MatchesRepository, type MatchListItem, getUnreadCounts, markThreadRead } from '../../features/messages';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { formatRelative, formatPresence } from '../../lib/time';
 
 const repo = new MatchesRepository();
@@ -17,20 +17,39 @@ export default function Matches() {
   const [error, setError] = React.useState<string | null>(null);
   const [searchQuery, setSearchQuery] = React.useState('');
 
+  const loadUnreadCounts = React.useCallback(async () => {
+    try {
+      const unread = await getUnreadCounts();
+      const map = new Map(unread.map(r => [r.other_user_id, r.unread]));
+      setItems(ts => ts.map(t => ({ ...t, unread: map.get(t.otherId) ?? 0 })));
+    } catch (e) {
+      console.error('[Matches] Failed to load unread counts:', e);
+    }
+  }, []);
+
   const load = React.useCallback(async () => {
     setError(null);
     setLoading(true);
     try {
       const list = await repo.listMyMatches();
       setItems(list);
+      // Load unread counts after loading matches
+      await loadUnreadCounts();
     } catch (e: any) {
       setError(e?.message ?? 'Failed to load chats');
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [loadUnreadCounts]);
 
   React.useEffect(() => { load(); }, [load]);
+
+  // Refresh unread counts when screen regains focus
+  useFocusEffect(
+    React.useCallback(() => {
+      loadUnreadCounts();
+    }, [loadUnreadCounts])
+  );
 
   const onRefresh = React.useCallback(async () => {
     setRefreshing(true);
@@ -53,7 +72,7 @@ export default function Matches() {
   const openChat = async (item: MatchListItem) => {
     // Optimistically clear unread in UI
     setItems((prev) => prev.map(i => i.matchId === item.matchId ? { ...i, unread: 0 } : i));
-    try { await repo.markRead(item.matchId); } catch {}
+    try { await markThreadRead(item.otherId); } catch {}
     nav.navigate('Chat', { matchId: item.matchId, otherId: item.otherId, name: item.name });
   };
 
@@ -100,7 +119,10 @@ export default function Matches() {
             {formatRelative(item.lastMessage?.at)}
           </Text>
           {unread > 0 && (
-            <View className="self-end mt-1 min-w-5 px-1 h-5 rounded-full bg-teal-500/90 items-center justify-center">
+            <View 
+              className="self-end mt-1 min-w-5 px-1 h-5 rounded-full bg-teal-500/90 items-center justify-center"
+              accessibilityLabel={`Unread ${unread} ${unread === 1 ? 'message' : 'messages'}`}
+            >
               <Text className="text-[11px] text-zinc-900 font-bold">{unread}</Text>
             </View>
           )}
