@@ -4,6 +4,8 @@ import { useRoute, useFocusEffect, useNavigation } from '@react-navigation/nativ
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { MessagesRepository, type ChatMessage, markThreadRead, getOtherLastRead } from '../../features/messages';
 import { BlocksRepository } from '../../features/safety/BlocksRepository';
+import { blockUser } from '../../features/safety/SafetyRepository';
+import ReportModal from '../../components/ReportModal';
 import { supabase } from '../../lib/supabase';
 import { pe } from '../../ui/platform';
 
@@ -20,11 +22,19 @@ export default function Chat() {
   const [sending, setSending] = React.useState(false);
   const [menuOpen, setMenuOpen] = React.useState(false);
   const [otherLastRead, setOtherLastRead] = React.useState<string | null>(null);
+  const [reportOpen, setReportOpen] = React.useState(false);
+  const [isBlocked, setIsBlocked] = React.useState(false);
   const scrollRef = React.useRef<FlatList | null>(null);
 
   React.useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setMe(data.session?.user?.id ?? null));
   }, []);
+
+  // Check if user is blocked on mount
+  React.useEffect(() => {
+    if (!otherId) return;
+    blocksRepo.isBlockedPair(otherId).then(blocked => setIsBlocked(blocked));
+  }, [otherId]);
 
   React.useEffect(() => {
     (async () => {
@@ -166,27 +176,30 @@ export default function Chat() {
           <View className="absolute right-4 top-16 z-10 rounded-xl border border-white/10 bg-[#0b0b0b]" {...pe('box-none')}>
             <View {...pe('auto')}>
             <Pressable
-              onPress={async () => {
+              onPress={() => {
                 setMenuOpen(false);
-                const otherId = (route.params as any)?.otherId as string | undefined;
-                if (!otherId) return;
-                await blocksRepo.block(otherId);
-                Alert.alert('Blocked', 'You will no longer see each other.');
-                nav.goBack();
+                setReportOpen(true);
               }}
               className="px-4 py-3 border-b border-white/10"
             >
-              <Text className="text-red-300">Block user</Text>
+              <Text className="text-zinc-100">Report user</Text>
             </Pressable>
             <Pressable
-              onPress={() => {
+              onPress={async () => {
                 setMenuOpen(false);
-                const otherId = (route.params as any)?.otherId as string | undefined;
-                nav.navigate('ReportUser', { otherId, from: 'chat' });
+                if (!otherId) return;
+                try {
+                  await blockUser(otherId);
+                  setIsBlocked(true);
+                  Alert.alert('Blocked', 'You will no longer see each other.');
+                  nav.goBack();
+                } catch (e: any) {
+                  Alert.alert('Error', 'Failed to block user');
+                }
               }}
               className="px-4 py-3"
             >
-              <Text className="text-zinc-100">Report user</Text>
+              <Text className="text-red-300">Block user</Text>
             </Pressable>
             </View>
           </View>
@@ -195,6 +208,13 @@ export default function Chat() {
         <View className="px-4 py-3 border-b border-white/5">
           <Text className="text-center text-zinc-300 text-lg font-medium">{name ?? 'Chat'}</Text>
         </View>
+
+        {isBlocked && (
+          <View className="mx-4 mt-3 px-4 py-3 rounded-xl bg-zinc-800/50 border border-white/10">
+            <Text className="text-zinc-300 text-sm text-center">You blocked this user</Text>
+          </View>
+        )}
+
         <FlatList
           ref={scrollRef}
           data={messages}
@@ -211,12 +231,32 @@ export default function Chat() {
           placeholder="Message…"
           placeholderTextColor="#9CA3AF"
           className="flex-1 px-3 py-3 rounded-2xl bg-white/10 text-zinc-100"
-          editable={!sending}
+          editable={!sending && !isBlocked}
         />
-        <Pressable onPress={send} disabled={sending} className="px-4 py-3 rounded-2xl bg-teal-500/90">
-          <Text className="text-zinc-900 font-semibold">Send</Text>
+        <Pressable 
+          onPress={send} 
+          disabled={sending || isBlocked} 
+          className={`px-4 py-3 rounded-2xl ${isBlocked ? 'bg-white/10' : 'bg-teal-500/90'}`}
+        >
+          <Text className={`font-semibold ${isBlocked ? 'text-zinc-500' : 'text-zinc-900'}`}>Send</Text>
         </Pressable>
       </View>
+
+      <ReportModal
+        visible={reportOpen}
+        onClose={() => setReportOpen(false)}
+        reportedId={otherId ?? null}
+        defaultBlock={true}
+        onSubmitted={({ reported, blocked }) => {
+          if (blocked) {
+            setIsBlocked(true);
+            Alert.alert('Blocked', 'You will no longer see each other.');
+            nav.goBack();
+          } else if (reported) {
+            Alert.alert('Reported', 'Thank you for your report.');
+          }
+        }}
+      />
     </KeyboardAvoidingView>
   );
 }
