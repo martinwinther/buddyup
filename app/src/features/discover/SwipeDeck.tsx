@@ -21,6 +21,8 @@ type Props = {
 
 const SwipeDeck = forwardRef<SwipeDeckRef, Props>(({ candidates, onSwipe, onPress }, ref) => {
   const [index, setIndex] = React.useState(0);
+  const [swipingCard, setSwipingCard] = React.useState<Candidate | null>(null);
+  
   const top = candidates[index];
   const next = candidates[index + 1];
   const third = candidates[index + 2];
@@ -32,9 +34,11 @@ const SwipeDeck = forwardRef<SwipeDeckRef, Props>(({ candidates, onSwipe, onPres
 
   const doSwipe = (dir: 'left' | 'right') => {
     if (!top) return;
+    setSwipingCard(top);
     const toX = dir === 'right' ? width * 1.3 : -width * 1.3;
     x.value = withTiming(toX, { duration: 180 }, () => {
       runOnJS(setIndex)(i => i + 1);
+      runOnJS(setSwipingCard)(null);
       x.value = 0; y.value = 0; rot.value = 0; dragging.value = false;
     });
     onSwipe(top.id, dir);
@@ -71,11 +75,11 @@ const SwipeDeck = forwardRef<SwipeDeckRef, Props>(({ candidates, onSwipe, onPres
     () =>
       Gesture.Tap()
         .onEnd(() => {
-          if (top && onPress) {
+          if (top && onPress && !swipingCard) {
             runOnJS(onPress)(top);
           }
         }),
-    [top?.id, onPress]
+    [top?.id, onPress, swipingCard]
   );
 
   const composed = useMemo(() => Gesture.Simultaneous(pan, tap), [pan, tap]);
@@ -119,13 +123,15 @@ const SwipeDeck = forwardRef<SwipeDeckRef, Props>(({ candidates, onSwipe, onPres
       </Animated.View>
     ) : null;
 
+  const displayCard = swipingCard || top;
+
   return (
     <View className="flex-1 items-center justify-center">
       <View style={{ width: Math.min(width * 0.92, 480), height: Math.min(width * 0.92 * 1.25, 600) }}>
         {Card(third, thirdStyle)}
         {Card(next, nextStyle)}
 
-        {top ? (
+        {displayCard ? (
           <GestureDetector gesture={composed}>
             <Animated.View style={[topStyle]}>
               {/* LIKE / NOPE stamps */}
@@ -137,13 +143,13 @@ const SwipeDeck = forwardRef<SwipeDeckRef, Props>(({ candidates, onSwipe, onPres
               </Animated.View>
 
               <CandidateCard
-                name={top.display_name}
-                age={top.age}
-                bio={top.bio}
-                photoUrl={top.photo_url}
-                shared={top.overlap_count}
-                distanceKm={top.distance_km}
-                lastActive={top.last_active}
+                name={displayCard.display_name}
+                age={displayCard.age}
+                bio={displayCard.bio}
+                photoUrl={displayCard.photo_url}
+                shared={displayCard.overlap_count}
+                distanceKm={displayCard.distance_km}
+                lastActive={displayCard.last_active}
               />
             </Animated.View>
           </GestureDetector>
