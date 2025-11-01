@@ -4,7 +4,7 @@ import 'react-native-reanimated';
 import React from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { SafeAreaView, View } from 'react-native';
+import { SafeAreaView, View, Platform } from 'react-native';
 import { AuthProvider, useAuth } from './src/contexts/AuthContext';
 import { OnboardingProvider } from './src/contexts/OnboardingContext';
 import { CategoriesProvider } from './src/features/categories/CategoriesProvider';
@@ -13,6 +13,7 @@ import { PersistenceProvider } from './src/features/onboarding/persistence';
 import { SupabaseOnboardingPersistence } from './src/features/onboarding/persistence';
 import Navigation from './src/navigation';
 import ResponsiveContainer from './src/components/ResponsiveContainer';
+import AppInstallPrompt from './src/web/AppInstallPrompt';
 
 function AppProviders({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
@@ -49,6 +50,7 @@ export default function App() {
           </AuthProvider>
         </SafeAreaView>
       </View>
+      {Platform.OS === 'web' ? <AppInstallPrompt /> : null}
       <StatusBar style="light" />
     </GestureHandlerRootView>
   );

@@ -1,0 +1,23 @@
+# Cache hashed static assets aggressively
+[[headers]]
+  for = "/_expo/static/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# PWA manifest & index can be revalidated quickly
+[[headers]]
+  for = "/manifest.json"
+  [headers.values]
+    Cache-Control = "public, max-age=3600"
+
+[[headers]]
+  for = "/index.html"
+  [headers.values]
+    Cache-Control = "no-cache"
+
+# Allow service worker scope if Expo emits one in the future
+[[headers]]
+  for = "/*"
+  [headers.values]
+    Service-Worker-Allowed = "/"
+
