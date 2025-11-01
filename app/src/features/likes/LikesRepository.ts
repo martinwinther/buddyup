@@ -24,10 +24,9 @@ export async function fetchYouLiked(limit = 25, offset = 0): Promise<LikeRow[]> 
   return (data as LikeRow[] | null) ?? [];
 }
 
-// Optional helper: like back via RPC (safer than raw insert)
+// Optional helper: like back (creates swipe + match thread)
 export async function likeUser(targetId: string) {
-  const { error } = await supabase.rpc('like_user', { target_id: targetId });
-  if (error) throw error;
+  await recordSwipe(targetId, 'right');
 }
 
 export type LikeItem = {
