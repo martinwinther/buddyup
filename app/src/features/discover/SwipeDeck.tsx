@@ -22,6 +22,8 @@ type Props = {
 const SwipeDeck = forwardRef<SwipeDeckRef, Props>(({ candidates, onSwipe, onPress }, ref) => {
   const [index, setIndex] = React.useState(0);
   const [swipingCard, setSwipingCard] = React.useState<Candidate | null>(null);
+  const [frozenNext, setFrozenNext] = React.useState<Candidate | null>(null);
+  const [frozenThird, setFrozenThird] = React.useState<Candidate | null>(null);
   
   const top = candidates[index];
   const next = candidates[index + 1];
@@ -35,10 +37,14 @@ const SwipeDeck = forwardRef<SwipeDeckRef, Props>(({ candidates, onSwipe, onPres
   const doSwipe = (dir: 'left' | 'right') => {
     if (!top) return;
     setSwipingCard(top);
+    setFrozenNext(next);
+    setFrozenThird(third);
     const toX = dir === 'right' ? width * 1.3 : -width * 1.3;
     x.value = withTiming(toX, { duration: 180 }, () => {
       runOnJS(setIndex)(i => i + 1);
       runOnJS(setSwipingCard)(null);
+      runOnJS(setFrozenNext)(null);
+      runOnJS(setFrozenThird)(null);
       x.value = 0; y.value = 0; rot.value = 0; dragging.value = false;
     });
     onSwipe(top.id, dir);
@@ -124,12 +130,14 @@ const SwipeDeck = forwardRef<SwipeDeckRef, Props>(({ candidates, onSwipe, onPres
     ) : null;
 
   const displayCard = swipingCard || top;
+  const displayNext = frozenNext || next;
+  const displayThird = frozenThird || third;
 
   return (
     <View className="flex-1 items-center justify-center">
       <View style={{ width: Math.min(width * 0.92, 480), height: Math.min(width * 0.92 * 1.25, 600) }}>
-        {Card(third, thirdStyle)}
-        {Card(next, nextStyle)}
+        {Card(displayThird, thirdStyle)}
+        {Card(displayNext, nextStyle)}
 
         {displayCard ? (
           <GestureDetector gesture={composed}>
