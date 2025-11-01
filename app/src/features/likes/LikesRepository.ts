@@ -13,13 +13,13 @@ export type LikeRow = {
 };
 
 export async function fetchLikedYou(limit = 25, offset = 0): Promise<LikeRow[]> {
-  const { data, error } = await supabase.rpc('liked_you', { limit, offset });
+  const { data, error } = await supabase.rpc('liked_you', { p_limit: limit, p_offset: offset });
   if (error) throw error;
   return (data as LikeRow[] | null) ?? [];
 }
 
 export async function fetchYouLiked(limit = 25, offset = 0): Promise<LikeRow[]> {
-  const { data, error } = await supabase.rpc('you_liked', { limit, offset });
+  const { data, error } = await supabase.rpc('you_liked', { p_limit: limit, p_offset: offset });
   if (error) throw error;
   return (data as LikeRow[] | null) ?? [];
 }
