@@ -20,14 +20,14 @@ type Props = {
 };
 
 const SwipeDeck = forwardRef<SwipeDeckRef, Props>(({ candidates, onSwipe, onPress }, ref) => {
-  const [index, setIndex] = React.useState(0);
   const [swipingCard, setSwipingCard] = React.useState<Candidate | null>(null);
   const [frozenNext, setFrozenNext] = React.useState<Candidate | null>(null);
   const [frozenThird, setFrozenThird] = React.useState<Candidate | null>(null);
+  const [isAnimating, setIsAnimating] = React.useState(false);
   
-  const top = candidates[index];
-  const next = candidates[index + 1];
-  const third = candidates[index + 2];
+  const top = candidates[0];
+  const next = candidates[1];
+  const third = candidates[2];
 
   const x = useSharedValue(0);
   const y = useSharedValue(0);
@@ -35,25 +35,35 @@ const SwipeDeck = forwardRef<SwipeDeckRef, Props>(({ candidates, onSwipe, onPres
   const dragging = useSharedValue(false);
 
   const doSwipe = (dir: 'left' | 'right') => {
-    if (!top) return;
+    if (!top || isAnimating) return;
+    setIsAnimating(true);
     setSwipingCard(top);
     setFrozenNext(next);
     setFrozenThird(third);
     const toX = dir === 'right' ? width * 1.3 : -width * 1.3;
-    x.value = withTiming(toX, { duration: 180 }, () => {
-      runOnJS(setIndex)(i => i + 1);
-      runOnJS(setSwipingCard)(null);
-      runOnJS(setFrozenNext)(null);
-      runOnJS(setFrozenThird)(null);
+    const cardId = top.id;
+    x.value = withTiming(toX, { duration: 180 }, (finished) => {
+      if (finished) {
+        runOnJS(onSwipe)(cardId, dir);
+      }
       x.value = 0; y.value = 0; rot.value = 0; dragging.value = false;
     });
-    onSwipe(top.id, dir);
   };
+
+  // Clear frozen states when the candidates array actually changes
+  React.useEffect(() => {
+    if (swipingCard && swipingCard.id !== top?.id) {
+      setSwipingCard(null);
+      setFrozenNext(null);
+      setFrozenThird(null);
+      setIsAnimating(false);
+    }
+  }, [top?.id, swipingCard]);
 
   useImperativeHandle(ref, () => ({
     swipeLeft: () => doSwipe('left'),
     swipeRight: () => doSwipe('right'),
-  }), [top?.id]);
+  }), [top?.id, isAnimating]);
 
   const pan = useMemo(
     () =>
@@ -74,7 +84,7 @@ const SwipeDeck = forwardRef<SwipeDeckRef, Props>(({ candidates, onSwipe, onPres
             dragging.value = false;
           }
         }),
-    [top?.id]
+    [top?.id, isAnimating]
   );
 
   const tap = useMemo(
