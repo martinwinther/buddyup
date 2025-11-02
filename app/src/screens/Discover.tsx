@@ -4,7 +4,8 @@ import { type Candidate } from '../features/discover/SupabaseDiscoverRepository'
 import { SwipesRepository } from '../features/discover/SwipesRepository';
 import SwipeDeck, { type SwipeDeckRef } from '../features/discover/SwipeDeck';
 import ActionBar from '../features/discover/ActionBar';
-import TopBar from '../components/TopBar';
+import { AppHeader } from '../components/AppHeader';
+import { MenuSheet } from '../components/MenuSheet';
 import InlineToast from '../components/InlineToast';
 import CardSkeleton from '../components/CardSkeleton';
 import ReportModal from '../components/ReportModal';
@@ -27,7 +28,8 @@ export default function Discover() {
   const pager = useDeckPager();
   const [toast, setToast] = React.useState<{ visible: boolean; message: string }>({ visible: false, message: '' });
   const [prefs, setPrefs] = React.useState<DiscoveryPrefs | null>(null);
-  const [menuOpen, setMenuOpen] = React.useState(false);
+  const [cardMenuOpen, setCardMenuOpen] = React.useState(false);
+  const [headerMenuOpen, setHeaderMenuOpen] = React.useState(false);
   const [reportOpen, setReportOpen] = React.useState(false);
   const [reportTarget, setReportTarget] = React.useState<string | null>(null);
 
@@ -108,7 +110,7 @@ export default function Discover() {
   const handleBlockQuick = async () => {
     const currentCard = cards[0];
     if (!currentCard) return;
-    setMenuOpen(false);
+    setCardMenuOpen(false);
     try {
       await blockUser(currentCard.id);
       showToast('Blocked');
@@ -122,56 +124,56 @@ export default function Discover() {
   const handleReportOpen = () => {
     const currentCard = cards[0];
     if (!currentCard) return;
-    setMenuOpen(false);
+    setCardMenuOpen(false);
     setReportTarget(currentCard.id);
     setReportOpen(true);
   };
 
   const cards = pager.items;
 
+  const menuItems = [
+    { 
+      key: 'messages', 
+      label: 'Messages', 
+      icon: 'chatbubble-ellipses-outline' as const, 
+      onPress: () => nav.navigate('Matches') 
+    },
+    { 
+      key: 'liked', 
+      label: 'Liked you', 
+      icon: 'heart-outline' as const, 
+      onPress: () => nav.navigate('LikedYou') 
+    },
+    { 
+      key: 'prefs', 
+      label: 'Discovery preferences', 
+      icon: 'options-outline' as const, 
+      onPress: () => nav.navigate('DiscoverySettings') 
+    },
+    { 
+      key: 'profile', 
+      label: 'Edit profile', 
+      icon: 'person-circle-outline' as const, 
+      onPress: () => nav.navigate('EditProfile') 
+    },
+    { 
+      key: 'settings', 
+      label: 'Settings', 
+      icon: 'settings-outline' as const, 
+      onPress: () => nav.navigate('Settings') 
+    },
+    { 
+      key: 'signout', 
+      label: 'Sign out', 
+      icon: 'log-out-outline' as const, 
+      danger: true, 
+      onPress: async () => { await supabase.auth.signOut(); } 
+    },
+  ];
+
   return (
     <View className="flex-1 bg-[#0a0a0a]">
-      <TopBar onPressLeft={() => nav.navigate('Settings')} onPressRight={() => nav.navigate('Matches')} />
-
-      <View className="absolute top-20 right-2 z-10" {...pe('box-none')}>
-        <View {...pe('auto')}>
-          <Pressable 
-            onPress={() => nav.navigate('DiscoverySettings')} 
-            hitSlop={8}
-            android_ripple={{ color: 'rgba(255,255,255,0.15)', borderless: true }}
-            className="px-2 py-1.5 rounded-lg bg-black/30 border border-white/20"
-          >
-            <Ionicons name="options-outline" size={16} color="#E5E7EB" />
-          </Pressable>
-        </View>
-      </View>
-
-      <View className="absolute top-32 right-2 z-10" {...pe('box-none')}>
-        <View {...pe('auto')}>
-          <Pressable
-            onPress={() => nav.navigate('Likes')}
-            hitSlop={8}
-            android_ripple={{ color: 'rgba(255,255,255,0.15)', borderless: true }}
-            className="px-2 py-1.5 rounded-lg bg-black/30 border border-white/20"
-            accessibilityLabel="Open likes"
-          >
-            <Ionicons name="heart-outline" size={16} color="#E5E7EB" />
-          </Pressable>
-        </View>
-      </View>
-
-      <View className="absolute top-44 right-2 z-10" {...pe('box-none')}>
-        <View {...pe('auto')}>
-          <Pressable
-            onPress={pager.refresh}
-            hitSlop={8}
-            android_ripple={{ color: 'rgba(255,255,255,0.15)', borderless: true }}
-            className="px-2 py-1.5 rounded-lg bg-black/30 border border-white/20"
-          >
-            <Ionicons name="refresh" size={16} color="#E5E7EB" />
-          </Pressable>
-        </View>
-      </View>
+      <AppHeader onOpenMenu={() => setHeaderMenuOpen(true)} />
 
       {/* Card overflow menu */}
       {cards.length > 0 && (
@@ -179,7 +181,7 @@ export default function Discover() {
           <View className="absolute top-20 left-2 z-10" {...pe('box-none')}>
             <View {...pe('auto')}>
               <Pressable
-                onPress={() => setMenuOpen(v => !v)}
+                onPress={() => setCardMenuOpen(v => !v)}
                 hitSlop={8}
                 android_ripple={{ color: 'rgba(255,255,255,0.15)', borderless: true }}
                 className="px-2 py-1.5 rounded-lg bg-black/30 border border-white/20"
@@ -189,7 +191,7 @@ export default function Discover() {
             </View>
           </View>
 
-          {menuOpen && (
+          {cardMenuOpen && (
             <View className="absolute top-32 left-2 z-10 rounded-xl border border-white/10 bg-[#0b0b0b]" {...pe('box-none')}>
               <View {...pe('auto')}>
                 <Pressable
@@ -276,6 +278,12 @@ export default function Discover() {
             onSwiped();
           }
         }}
+      />
+
+      <MenuSheet 
+        visible={headerMenuOpen} 
+        onClose={() => setHeaderMenuOpen(false)} 
+        items={menuItems} 
       />
     </View>
   );
