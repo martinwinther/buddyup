@@ -8,7 +8,6 @@ import { SafeAreaView, View, Platform } from 'react-native';
 import { AuthProvider, useAuth } from './src/contexts/AuthContext';
 import { OnboardingProvider } from './src/contexts/OnboardingContext';
 import { CategoriesProvider } from './src/features/categories/CategoriesProvider';
-import { SupabaseCategoriesRepository } from './src/features/categories/SupabaseCategoriesRepository';
 import { PersistenceProvider } from './src/features/onboarding/persistence';
 import { SupabaseOnboardingPersistence } from './src/features/onboarding/persistence';
 import Navigation from './src/navigation';
@@ -23,12 +22,10 @@ function AppProviders({ children }: { children: React.ReactNode }) {
     [user?.id]
   );
 
-  const categoriesRepo = React.useMemo(() => new SupabaseCategoriesRepository(), []);
-
   return (
     <PersistenceProvider impl={persistenceImpl}>
       <OnboardingProvider>
-        <CategoriesProvider repo={categoriesRepo}>
+        <CategoriesProvider>
           {children}
         </CategoriesProvider>
       </OnboardingProvider>

@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { CategoriesRepository, Category } from './types';
+import { Category } from './types';
+import { fetchCategories } from './SupabaseCategoriesRepository';
 
 interface CategoriesContextType {
   categories: Category[];
@@ -11,11 +12,10 @@ interface CategoriesContextType {
 const CategoriesContext = createContext<CategoriesContextType | undefined>(undefined);
 
 interface CategoriesProviderProps {
-  repo: CategoriesRepository;
   children: React.ReactNode;
 }
 
-export function CategoriesProvider({ repo, children }: CategoriesProviderProps) {
+export function CategoriesProvider({ children }: CategoriesProviderProps) {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -28,7 +28,7 @@ export function CategoriesProvider({ repo, children }: CategoriesProviderProps) 
     try {
       setLoading(true);
       setError(null);
-      const data = await repo.listAll();
+      const data = await fetchCategories();
       setCategories(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load categories');

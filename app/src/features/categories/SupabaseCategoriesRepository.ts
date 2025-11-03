@@ -1,15 +1,24 @@
 import { supabase } from '../../lib/supabase';
-import type { CategoriesRepository, Category } from './types';
 
-export class SupabaseCategoriesRepository implements CategoriesRepository {
-  async listAll(): Promise<Category[]> {
-    const { data, error } = await supabase
-      .from('categories')
-      .select('id, slug, name')
-      .order('name', { ascending: true });
+export type Category = { id: number; slug: string; name: string };
 
-    if (error) throw error;
-    return (data ?? []).map((r) => ({ id: r.id, slug: r.slug, name: r.name }));
+let cache: Category[] | null = null;
+
+export async function fetchCategories(): Promise<Category[]> {
+  if (cache) return cache;
+
+  const { data, error } = await supabase
+    .from('categories')
+    .select('id, slug, name')
+    .order('name');
+
+  if (error) {
+    console.warn('[categories] load failed:', error.message);
+    cache = [];
+    return cache;
   }
+
+  cache = (data ?? []).map((c) => ({ id: c.id, slug: c.slug, name: c.name }));
+  return cache;
 }
 
