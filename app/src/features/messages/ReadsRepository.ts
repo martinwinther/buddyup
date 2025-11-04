@@ -1,8 +1,18 @@
 import { supabase } from '../../lib/supabase';
 
-export type UnreadRow = { other_user_id: string; unread: number; last_read_at: string | null };
+export type UnreadRow = { 
+  match_id: string;
+  other_user_id: string; 
+  unread: number; 
+  last_read_at: string | null;
+};
 
+/**
+ * @deprecated Use markThreadRead from readState.ts instead
+ * This RPC-based version is kept for backward compatibility but should not be used
+ */
 export async function markThreadRead(otherUserId: string) {
+  console.warn('[ReadsRepository] markThreadRead is deprecated. Use readState.markThreadRead instead.');
   const { error } = await supabase.rpc('mark_thread_read', { other_id: otherUserId });
   if (error) throw error;
 }

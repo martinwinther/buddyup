@@ -1,6 +1,5 @@
 import { supabase } from '../../lib/supabase';
 import { BlocksRepository } from '../safety/BlocksRepository';
-import { markThreadRead } from './ReadsRepository';
 
 export type MatchListItem = {
   matchId: string;
