@@ -24,6 +24,7 @@ const SwipeDeck = forwardRef<SwipeDeckRef, Props>(({ candidates, onSwipe, onPres
   const [frozenNext, setFrozenNext] = React.useState<Candidate | null>(null);
   const [frozenThird, setFrozenThird] = React.useState<Candidate | null>(null);
   const [isAnimating, setIsAnimating] = React.useState(false);
+  const [detailsExpanded, setDetailsExpanded] = React.useState(false);
   
   const top = candidates[0];
   const next = candidates[1];
@@ -57,6 +58,7 @@ const SwipeDeck = forwardRef<SwipeDeckRef, Props>(({ candidates, onSwipe, onPres
       setFrozenNext(null);
       setFrozenThird(null);
       setIsAnimating(false);
+      setDetailsExpanded(false);
     }
   }, [top?.id, swipingCard]);
 
@@ -68,6 +70,7 @@ const SwipeDeck = forwardRef<SwipeDeckRef, Props>(({ candidates, onSwipe, onPres
   const pan = useMemo(
     () =>
       Gesture.Pan()
+        .enabled(!detailsExpanded)
         .onBegin(() => { dragging.value = true; })
         .onChange((e) => {
           x.value = e.translationX;
@@ -84,17 +87,13 @@ const SwipeDeck = forwardRef<SwipeDeckRef, Props>(({ candidates, onSwipe, onPres
             dragging.value = false;
           }
         }),
-    [top?.id, isAnimating]
+    [top?.id, isAnimating, detailsExpanded]
   );
 
   const tap = useMemo(
     () =>
       Gesture.Tap()
-        .onEnd(() => {
-          if (top && onPress && !swipingCard) {
-            runOnJS(onPress)(top);
-          }
-        }),
+        .enabled(false),
     [top?.id, onPress, swipingCard]
   );
 
@@ -124,7 +123,7 @@ const SwipeDeck = forwardRef<SwipeDeckRef, Props>(({ candidates, onSwipe, onPres
     transform: [{ rotateZ: '12deg' }],
   }));
 
-  const Card = (c: Candidate | undefined, style?: any) =>
+  const Card = (c: Candidate | undefined, style?: any, isTop = false) =>
     c ? (
       <Animated.View style={style}>
         <CandidateCard
@@ -135,6 +134,10 @@ const SwipeDeck = forwardRef<SwipeDeckRef, Props>(({ candidates, onSwipe, onPres
           shared={c.overlap_count}
           distanceKm={c.distance_km}
           lastActive={c.last_active}
+          categories={undefined}
+          expanded={isTop && detailsExpanded}
+          onToggleExpanded={() => setDetailsExpanded(v => !v)}
+          onOpenChat={undefined}
         />
       </Animated.View>
     ) : null;
@@ -146,8 +149,8 @@ const SwipeDeck = forwardRef<SwipeDeckRef, Props>(({ candidates, onSwipe, onPres
   return (
     <View className="flex-1 items-center justify-center">
       <View style={{ width: Math.min(width * 0.92, 480), height: Math.min(width * 0.92 * 1.25, 600) }}>
-        {Card(displayThird, thirdStyle)}
-        {Card(displayNext, nextStyle)}
+        {Card(displayThird, thirdStyle, false)}
+        {Card(displayNext, nextStyle, false)}
 
         {displayCard ? (
           <GestureDetector gesture={composed}>
@@ -168,6 +171,10 @@ const SwipeDeck = forwardRef<SwipeDeckRef, Props>(({ candidates, onSwipe, onPres
                 shared={displayCard.overlap_count}
                 distanceKm={displayCard.distance_km}
                 lastActive={displayCard.last_active}
+                categories={undefined}
+                expanded={detailsExpanded}
+                onToggleExpanded={() => setDetailsExpanded(v => !v)}
+                onOpenChat={undefined}
               />
             </Animated.View>
           </GestureDetector>
