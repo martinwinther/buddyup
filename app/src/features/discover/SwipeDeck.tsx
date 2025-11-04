@@ -4,7 +4,7 @@ import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   useSharedValue, useAnimatedStyle, withSpring, withTiming, runOnJS, interpolate, Extrapolate
 } from 'react-native-reanimated';
-import CandidateCard from './CandidateCard';
+import FullProfileCard from './FullProfileCard';
 import type { Candidate } from './SupabaseDiscoverRepository';
 
 const { width } = Dimensions.get('window');
@@ -24,7 +24,6 @@ const SwipeDeck = forwardRef<SwipeDeckRef, Props>(({ candidates, onSwipe, onPres
   const [frozenNext, setFrozenNext] = React.useState<Candidate | null>(null);
   const [frozenThird, setFrozenThird] = React.useState<Candidate | null>(null);
   const [isAnimating, setIsAnimating] = React.useState(false);
-  const [detailsExpanded, setDetailsExpanded] = React.useState(false);
   
   const top = candidates[0];
   const next = candidates[1];
@@ -58,7 +57,6 @@ const SwipeDeck = forwardRef<SwipeDeckRef, Props>(({ candidates, onSwipe, onPres
       setFrozenNext(null);
       setFrozenThird(null);
       setIsAnimating(false);
-      setDetailsExpanded(false);
     }
   }, [top?.id, swipingCard]);
 
@@ -70,7 +68,6 @@ const SwipeDeck = forwardRef<SwipeDeckRef, Props>(({ candidates, onSwipe, onPres
   const pan = useMemo(
     () =>
       Gesture.Pan()
-        .enabled(!detailsExpanded)
         .onBegin(() => { dragging.value = true; })
         .onChange((e) => {
           x.value = e.translationX;
@@ -87,7 +84,7 @@ const SwipeDeck = forwardRef<SwipeDeckRef, Props>(({ candidates, onSwipe, onPres
             dragging.value = false;
           }
         }),
-    [top?.id, isAnimating, detailsExpanded]
+    [top?.id, isAnimating]
   );
 
   const tap = useMemo(
@@ -123,21 +120,19 @@ const SwipeDeck = forwardRef<SwipeDeckRef, Props>(({ candidates, onSwipe, onPres
     transform: [{ rotateZ: '12deg' }],
   }));
 
-  const Card = (c: Candidate | undefined, style?: any, isTop = false) =>
+  const Card = (c: Candidate | undefined, style?: any) =>
     c ? (
       <Animated.View style={style}>
-        <CandidateCard
+        <FullProfileCard
           name={c.display_name}
           age={c.age}
           bio={c.bio}
           photoUrl={c.photo_url}
-          shared={c.overlap_count}
           distanceKm={c.distance_km}
           lastActive={c.last_active}
-          categories={undefined}
-          expanded={isTop && detailsExpanded}
-          onToggleExpanded={() => setDetailsExpanded(v => !v)}
-          onOpenChat={undefined}
+          sharedCount={c.overlap_count}
+          photos={c.profile_photos}
+          categories={c.categories}
         />
       </Animated.View>
     ) : null;
@@ -148,33 +143,31 @@ const SwipeDeck = forwardRef<SwipeDeckRef, Props>(({ candidates, onSwipe, onPres
 
   return (
     <View className="flex-1 items-center justify-center">
-      <View style={{ width: Math.min(width * 0.92, 480), height: Math.min(width * 0.92 * 1.25, 600) }}>
-        {Card(displayThird, thirdStyle, false)}
-        {Card(displayNext, nextStyle, false)}
+      <View style={{ width: Math.min(width * 0.92, 560), height: Math.min(width * 0.92 * 1.25, 700) }}>
+        {Card(displayThird, thirdStyle)}
+        {Card(displayNext, nextStyle)}
 
         {displayCard ? (
           <GestureDetector gesture={composed}>
             <Animated.View style={[topStyle]}>
               {/* LIKE / NOPE stamps */}
-              <Animated.View style={[{ position: 'absolute', top: 24, left: 24, paddingHorizontal: 10, paddingVertical: 6, borderWidth: 3, borderColor: 'rgba(34,197,94,0.9)', borderRadius: 12 }, likeStyle]}>
+              <Animated.View style={[{ position: 'absolute', top: 24, left: 24, paddingHorizontal: 10, paddingVertical: 6, borderWidth: 3, borderColor: 'rgba(34,197,94,0.9)', borderRadius: 12, zIndex: 10 }, likeStyle]}>
                 <Text style={{ color: 'rgb(34,197,94)', fontSize: 18, fontWeight: '900', letterSpacing: 2 }}>LIKE</Text>
               </Animated.View>
-              <Animated.View style={[{ position: 'absolute', top: 24, right: 60, paddingHorizontal: 10, paddingVertical: 6, borderWidth: 3, borderColor: 'rgba(239,68,68,0.9)', borderRadius: 12 }, nopeStyle]}>
+              <Animated.View style={[{ position: 'absolute', top: 24, right: 60, paddingHorizontal: 10, paddingVertical: 6, borderWidth: 3, borderColor: 'rgba(239,68,68,0.9)', borderRadius: 12, zIndex: 10 }, nopeStyle]}>
                 <Text style={{ color: 'rgb(239,68,68)', fontSize: 18, fontWeight: '900', letterSpacing: 2 }}>NOPE</Text>
               </Animated.View>
 
-              <CandidateCard
+              <FullProfileCard
                 name={displayCard.display_name}
                 age={displayCard.age}
                 bio={displayCard.bio}
                 photoUrl={displayCard.photo_url}
-                shared={displayCard.overlap_count}
                 distanceKm={displayCard.distance_km}
                 lastActive={displayCard.last_active}
-                categories={undefined}
-                expanded={detailsExpanded}
-                onToggleExpanded={() => setDetailsExpanded(v => !v)}
-                onOpenChat={undefined}
+                sharedCount={displayCard.overlap_count}
+                photos={displayCard.profile_photos}
+                categories={displayCard.categories}
               />
             </Animated.View>
           </GestureDetector>
