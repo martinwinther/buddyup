@@ -32,9 +32,9 @@ const AuthStack = createNativeStackNavigator<RootStackParamList>();
 const OnboardingStack = createNativeStackNavigator<RootStackParamList>();
 const MainStack = createNativeStackNavigator<RootStackParamList>();
 
-export default function Navigation() {
+export default function Navigation({ navigationRef }: { navigationRef?: any }) {
   return (
-    <NavigationContainer>
+    <NavigationContainer ref={navigationRef}>
       <AppGate />
     </NavigationContainer>
   );

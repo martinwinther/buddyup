@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, FlatList, TextInput, Pressable, KeyboardAvoidingView, Platform, Alert } from 'react-native';
 import { useRoute, useFocusEffect, useNavigation } from '@react-navigation/native';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { MessagesRepository, type ChatMessage, getOtherLastRead } from '../../features/messages';
+import { MessagesRepository, type ChatMessage, getOtherLastRead, useChatNotify } from '../../features/messages';
 import { markThreadRead } from '../../features/messages/readState';
 import { BlocksRepository } from '../../features/safety/BlocksRepository';
 import { blockUser } from '../../features/safety/SafetyRepository';
@@ -16,6 +16,7 @@ const blocksRepo = new BlocksRepository();
 export default function Chat() {
   const route = useRoute<any>();
   const nav = useNavigation<any>();
+  const { setActiveMatch } = useChatNotify();
   const { matchId, otherId, name } = route.params as { matchId: string; otherId?: string; name?: string };
   const [me, setMe] = React.useState<string | null>(null);
   const [messages, setMessages] = React.useState<ChatMessage[]>([]);
@@ -86,16 +87,17 @@ export default function Chat() {
   const meRef = React.useRef<string | null>(null);
   React.useEffect(() => { meRef.current = me; }, [me]);
 
-  // Auto-mark read on focus
+  // Mark active thread and auto-mark read on focus
   useFocusEffect(
     React.useCallback(() => {
+      setActiveMatch(matchId);
       if (me && matchId) {
         markThreadRead(me, matchId).catch(() => {});
         // Also refresh the other user's last read status
         getOtherLastRead(matchId).then(setOtherLastRead).catch(() => {});
       }
-      return () => {}; // no-op on blur
-    }, [me, matchId])
+      return () => setActiveMatch(null);
+    }, [me, matchId, setActiveMatch])
   );
 
 

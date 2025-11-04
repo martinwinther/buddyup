@@ -17,6 +17,7 @@ import * as Location from 'expo-location';
 import { supabase } from '../lib/supabase';
 import { pe } from '../ui/platform';
 import { blockUser } from '../features/safety/SafetyRepository';
+import { useChatNotify } from '../features/messages';
 
 const swipesRepo = new SwipesRepository();
 const prefsRepo = new DiscoveryPrefsRepository();
@@ -24,6 +25,7 @@ const prefsRepo = new DiscoveryPrefsRepository();
 export default function Discover() {
   const nav = useNavigation<any>();
   const route = useRoute<any>();
+  const { unreadTotal } = useChatNotify();
   const deckRef = React.useRef<SwipeDeckRef>(null);
   const pager = useDeckPager();
   const [toast, setToast] = React.useState<{ visible: boolean; message: string }>({ visible: false, message: '' });
@@ -134,7 +136,7 @@ export default function Discover() {
   const menuItems = [
     { 
       key: 'messages', 
-      label: 'Messages', 
+      label: unreadTotal > 0 ? `Messages (${unreadTotal})` : 'Messages', 
       icon: 'chatbubble-ellipses-outline' as const, 
       onPress: () => nav.navigate('Matches') 
     },
