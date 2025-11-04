@@ -13,12 +13,27 @@ export async function getUnreadCounts(): Promise<UnreadRow[]> {
   return data ?? [];
 }
 
-export async function getOtherLastRead(otherUserId: string): Promise<string | null> {
+export async function getOtherLastRead(matchId: string): Promise<string | null> {
+  const { data: userData } = await supabase.auth.getUser();
+  const me = userData.user?.id;
+  if (!me) return null;
+
+  // Get the other user in this match
+  const { data: match } = await supabase
+    .from('matches')
+    .select('user_a, user_b')
+    .eq('id', matchId)
+    .maybeSingle();
+  
+  if (!match) return null;
+  const otherId = match.user_a === me ? match.user_b : match.user_a;
+
+  // Get their last read time for this match
   const { data, error } = await supabase
-    .from('thread_reads')
+    .from('message_reads')
     .select('last_read_at')
-    .eq('user_id', otherUserId)
-    .eq('other_user_id', (await supabase.auth.getUser()).data.user?.id ?? '')
+    .eq('user_id', otherId)
+    .eq('match_id', matchId)
     .maybeSingle();
 
   if (error) return null;

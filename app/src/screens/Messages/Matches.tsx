@@ -2,20 +2,24 @@ import React from 'react';
 import { View, Text, FlatList, Pressable, TextInput, RefreshControl } from 'react-native';
 import { Image } from 'expo-image';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { MatchesRepository, type MatchListItem, getUnreadCounts, markThreadRead } from '../../features/messages';
+import { MatchesRepository, type MatchListItem, getUnreadCounts, subscribeToMatchMessages } from '../../features/messages';
+import { markThreadRead } from '../../features/messages/readState';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { formatRelative, formatPresence } from '../../lib/time';
+import { useAuth } from '../../contexts/AuthContext';
 
 const repo = new MatchesRepository();
 
 export default function Matches() {
   const nav = useNavigation<any>();
+  const { user } = useAuth();
   const [items, setItems] = React.useState<MatchListItem[]>([]);
   const [filtered, setFiltered] = React.useState<MatchListItem[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [refreshing, setRefreshing] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [searchQuery, setSearchQuery] = React.useState('');
+  const subs = React.useRef<(() => void)[]>([]);
 
   const loadUnreadCounts = React.useCallback(async () => {
     try {
@@ -43,6 +47,32 @@ export default function Matches() {
   }, [loadUnreadCounts]);
 
   React.useEffect(() => { load(); }, [load]);
+
+  // Setup realtime subscriptions for all matches
+  React.useEffect(() => {
+    // Clean up old subscriptions
+    subs.current.forEach((u) => u());
+    subs.current = [];
+
+    if (!user?.id || items.length === 0) return;
+
+    items.forEach((t) => {
+      const off = subscribeToMatchMessages(t.matchId, (row) => {
+        setItems((prev) => prev.map((th) => {
+          if (th.matchId !== t.matchId) return th;
+          const isMine = row.sender_id === user.id;
+          return {
+            ...th,
+            lastMessage: { body: row.body, at: row.created_at, fromMe: isMine },
+            unread: isMine ? th.unread : (th.unread ?? 0) + 1,
+          };
+        }));
+      });
+      subs.current.push(off);
+    });
+
+    return () => { subs.current.forEach((u) => u()); subs.current = []; };
+  }, [items.length > 0 ? items.map(t => t.matchId).join(',') : '', user?.id]);
 
   // Refresh unread counts when screen regains focus
   useFocusEffect(
@@ -72,7 +102,9 @@ export default function Matches() {
   const openChat = async (item: MatchListItem) => {
     // Optimistically clear unread in UI
     setItems((prev) => prev.map(i => i.matchId === item.matchId ? { ...i, unread: 0 } : i));
-    try { await markThreadRead(item.otherId); } catch {}
+    if (user?.id) {
+      try { await markThreadRead(user.id, item.matchId); } catch {}
+    }
     nav.navigate('Chat', { matchId: item.matchId, otherId: item.otherId, name: item.name });
   };
 

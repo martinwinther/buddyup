@@ -2,7 +2,8 @@ import React from 'react';
 import { View, Text, FlatList, TextInput, Pressable, KeyboardAvoidingView, Platform, Alert } from 'react-native';
 import { useRoute, useFocusEffect, useNavigation } from '@react-navigation/native';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { MessagesRepository, type ChatMessage, markThreadRead, getOtherLastRead } from '../../features/messages';
+import { MessagesRepository, type ChatMessage, getOtherLastRead } from '../../features/messages';
+import { markThreadRead } from '../../features/messages/readState';
 import { BlocksRepository } from '../../features/safety/BlocksRepository';
 import { blockUser } from '../../features/safety/SafetyRepository';
 import ReportModal from '../../components/ReportModal';
@@ -42,16 +43,14 @@ export default function Chat() {
         const list = await repo.list(matchId, 100);
         setMessages(list);
         // Load other user's last read time
-        if (otherId) {
-          const lastRead = await getOtherLastRead(otherId);
-          setOtherLastRead(lastRead);
-        }
+        const lastRead = await getOtherLastRead(matchId);
+        setOtherLastRead(lastRead);
       } catch (error) {
         console.error('[Chat] Failed to load messages:', error);
         // Continue with empty messages for now
       }
     })();
-  }, [matchId, otherId]);
+  }, [matchId]);
 
   // Subscribe to realtime inserts for this match
   React.useEffect(() => {
@@ -72,7 +71,9 @@ export default function Chat() {
             return next;
           });
           // If the incoming message is from the other user, refresh read state
-          markThreadRead(otherId).catch(() => {});
+          if (meRef.current) {
+            markThreadRead(meRef.current, matchId).catch(() => {});
+          }
         }
       )
       .subscribe();
@@ -88,13 +89,13 @@ export default function Chat() {
   // Auto-mark read on focus
   useFocusEffect(
     React.useCallback(() => {
-      if (otherId) {
-        markThreadRead(otherId).catch(() => {});
+      if (me && matchId) {
+        markThreadRead(me, matchId).catch(() => {});
         // Also refresh the other user's last read status
-        getOtherLastRead(otherId).then(setOtherLastRead).catch(() => {});
+        getOtherLastRead(matchId).then(setOtherLastRead).catch(() => {});
       }
       return () => {}; // no-op on blur
-    }, [otherId])
+    }, [me, matchId])
   );
 
 
@@ -121,7 +122,7 @@ export default function Chat() {
       
       try {
         await repo.send(matchId, trimmed);
-        if (otherId) await markThreadRead(otherId);
+        if (me) await markThreadRead(me, matchId);
       } catch (dbError) {
         console.error('[Chat] Database operation failed:', dbError);
         Alert.alert('Demo Mode', 'Chat functionality is in demo mode. Full messaging will be available once the database is set up.');
