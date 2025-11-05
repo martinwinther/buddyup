@@ -2,83 +2,71 @@ import React from 'react';
 import { View, Text, FlatList, Pressable, TextInput, RefreshControl } from 'react-native';
 import { Image } from 'expo-image';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { MatchesRepository, type MatchListItem, getUnreadCounts, subscribeToMatchMessages } from '../../features/messages';
-import { markThreadRead } from '../../features/messages/readState';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
-import { formatRelative, formatPresence } from '../../lib/time';
-import { useAuth } from '../../contexts/AuthContext';
-
-const repo = new MatchesRepository();
+import { formatRelative } from '../../lib/time';
+import { fetchInbox, markThreadRead, type InboxThread } from '../../lib/chat';
+import { supabase } from '../../lib/supabase';
 
 export default function Matches() {
   const nav = useNavigation<any>();
-  const { user } = useAuth();
-  const [items, setItems] = React.useState<MatchListItem[]>([]);
-  const [filtered, setFiltered] = React.useState<MatchListItem[]>([]);
+  const [items, setItems] = React.useState<InboxThread[]>([]);
+  const [filtered, setFiltered] = React.useState<InboxThread[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [refreshing, setRefreshing] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [searchQuery, setSearchQuery] = React.useState('');
-  const subs = React.useRef<(() => void)[]>([]);
-
-  const loadUnreadCounts = React.useCallback(async () => {
-    try {
-      const unread = await getUnreadCounts();
-      const map = new Map(unread.map(r => [r.other_user_id, r.unread]));
-      setItems(ts => ts.map(t => ({ ...t, unread: map.get(t.otherId) ?? 0 })));
-    } catch (e) {
-      console.error('[Matches] Failed to load unread counts:', e);
-    }
-  }, []);
 
   const load = React.useCallback(async () => {
     setError(null);
     setLoading(true);
     try {
-      const list = await repo.listMyMatches();
-      setItems(list);
-      // Load unread counts after loading matches
-      await loadUnreadCounts();
+      const threads = await fetchInbox();
+      setItems(threads);
     } catch (e: any) {
       setError(e?.message ?? 'Failed to load chats');
     } finally {
       setLoading(false);
     }
-  }, [loadUnreadCounts]);
+  }, []);
 
   React.useEffect(() => { load(); }, [load]);
 
-  // Setup realtime subscriptions for all matches
+  // Setup realtime subscription for new messages
   React.useEffect(() => {
-    // Clean up old subscriptions
-    subs.current.forEach((u) => u());
-    subs.current = [];
+    let channel: ReturnType<typeof supabase.channel> | null = null;
 
-    if (!user?.id || items.length === 0) return;
+    const setupRealtimeSubscription = async () => {
+      const { data: userData } = await supabase.auth.getUser();
+      const userId = userData.user?.id;
+      if (!userId) return;
 
-    items.forEach((t) => {
-      const off = subscribeToMatchMessages(t.matchId, (row) => {
-        setItems((prev) => prev.map((th) => {
-          if (th.matchId !== t.matchId) return th;
-          const isMine = row.sender_id === user.id;
-          return {
-            ...th,
-            lastMessage: { body: row.body, at: row.created_at, fromMe: isMine },
-            unread: isMine ? th.unread : (th.unread ?? 0) + 1,
-          };
-        }));
-      });
-      subs.current.push(off);
-    });
+      channel = supabase
+        .channel('inbox-messages')
+        .on(
+          'postgres_changes',
+          { event: 'INSERT', schema: 'public', table: 'messages' },
+          async () => {
+            // Reload inbox when new messages arrive
+            await load();
+          }
+        )
+        .subscribe();
+    };
 
-    return () => { subs.current.forEach((u) => u()); subs.current = []; };
-  }, [items.length > 0 ? items.map(t => t.matchId).join(',') : '', user?.id]);
+    setupRealtimeSubscription();
 
-  // Refresh unread counts when screen regains focus
+    return () => {
+      if (channel) {
+        supabase.removeChannel(channel);
+      }
+    };
+  }, [load]);
+
+  // Refresh inbox when screen regains focus
   useFocusEffect(
     React.useCallback(() => {
-      loadUnreadCounts();
-    }, [loadUnreadCounts])
+      load();
+    }, [load])
   );
 
   const onRefresh = React.useCallback(async () => {
@@ -92,24 +80,26 @@ export default function Matches() {
     if (!needle) return setFiltered(items);
     setFiltered(
       items.filter((item) => {
-        const name = (item.name ?? '').toLowerCase();
-        const msg = (item.lastMessage?.body ?? '').toLowerCase();
+        const name = (item.other_name ?? '').toLowerCase();
+        const msg = (item.last_message ?? '').toLowerCase();
         return name.includes(needle) || msg.includes(needle);
       })
     );
   }, [searchQuery, items]);
 
-  const openChat = async (item: MatchListItem) => {
+  const openChat = async (item: InboxThread) => {
     // Optimistically clear unread in UI
-    setItems((prev) => prev.map(i => i.matchId === item.matchId ? { ...i, unread: 0 } : i));
-    if (user?.id) {
-      try { await markThreadRead(user.id, item.matchId); } catch {}
+    setItems((prev) => prev.map(i => i.other_user_id === item.other_user_id ? { ...i, unread_count: 0 } : i));
+    try { 
+      await markThreadRead(item.other_user_id); 
+    } catch (e) {
+      console.warn('[Matches] Failed to mark thread read:', e);
     }
-    nav.navigate('Chat', { matchId: item.matchId, otherId: item.otherId, name: item.name });
+    nav.navigate('Chat', { otherId: item.other_user_id, name: item.other_name });
   };
 
-  const renderItem = ({ item }: { item: MatchListItem }) => {
-    const unread = item.unread ?? 0;
+  const renderItem = ({ item }: { item: InboxThread }) => {
+    const unread = item.unread_count ?? 0;
     return (
       <Pressable
         onPress={() => openChat(item)}
@@ -118,7 +108,7 @@ export default function Matches() {
         android_ripple={{ color: 'rgba(255,255,255,0.15)' }}
       >
         <Image
-          source={item.photoUrl ? { uri: item.photoUrl } : require('../../../assets/icon.png')}
+          source={item.other_photo_url ? { uri: item.other_photo_url } : require('../../../assets/icon.png')}
           className="w-12 h-12 rounded-full"
           contentFit="cover"
         />
@@ -126,36 +116,25 @@ export default function Matches() {
         <View className="flex-1">
           <View className="flex-row items-center gap-2">
             <Text className="text-zinc-100 font-semibold" numberOfLines={1}>
-              {item.name ?? 'Buddy'}
+              {item.other_name ?? 'Buddy'}
             </Text>
-            {!!item.lastActive && (
-              <Text className="text-[11px] text-zinc-500" numberOfLines={1}>
-                {formatPresence(item.lastActive)}
-              </Text>
-            )}
           </View>
 
           <Text className={`text-sm ${unread > 0 ? 'text-zinc-100' : 'text-zinc-400'}`} numberOfLines={1}>
-            {item.lastMessage ? (
-              <>
-                {item.lastMessage.fromMe ? 'You: ' : ''}{item.lastMessage.body}
-              </>
-            ) : (
-              'Say hi 👋'
-            )}
+            {item.last_message ? item.last_message : 'Say hi 👋'}
           </Text>
         </View>
 
         <View className="items-end w-16">
           <Text className="text-[11px] text-zinc-500">
-            {formatRelative(item.lastMessage?.at)}
+            {formatRelative(item.last_at)}
           </Text>
           {unread > 0 && (
             <View 
               className="self-end mt-1 min-w-5 px-1 h-5 rounded-full bg-teal-500/90 items-center justify-center"
-              accessibilityLabel={`Unread ${unread} ${unread === 1 ? 'message' : 'messages'}`}
+              accessibilityLabel={`${unread} unread ${unread === 1 ? 'message' : 'messages'}`}
             >
-              <Text className="text-[11px] text-zinc-900 font-bold">{unread}</Text>
+              <Text className="text-[11px] text-zinc-900 font-bold">{unread > 9 ? '9+' : unread}</Text>
             </View>
           )}
         </View>
@@ -225,7 +204,7 @@ export default function Matches() {
       ) : (
         <FlatList
           data={filtered}
-          keyExtractor={(item) => item.matchId}
+          keyExtractor={(item) => item.other_user_id}
           renderItem={renderItem}
           refreshControl={<RefreshControl tintColor="#E5E7EB" refreshing={refreshing} onRefresh={onRefresh} />}
           initialNumToRender={12}

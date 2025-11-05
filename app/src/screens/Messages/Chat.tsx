@@ -3,7 +3,7 @@ import { View, Text, FlatList, TextInput, Pressable, KeyboardAvoidingView, Platf
 import { useRoute, useFocusEffect, useNavigation } from '@react-navigation/native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { MessagesRepository, type ChatMessage, getOtherLastRead, useChatNotify } from '../../features/messages';
-import { markThreadRead } from '../../features/messages/readState';
+import { markThreadRead } from '../../lib/chat';
 import { BlocksRepository } from '../../features/safety/BlocksRepository';
 import { blockUser } from '../../features/safety/SafetyRepository';
 import ReportModal from '../../components/ReportModal';
@@ -13,12 +13,27 @@ import { pe } from '../../ui/platform';
 const repo = new MessagesRepository();
 const blocksRepo = new BlocksRepository();
 
+async function findMatchId(otherId: string): Promise<string | null> {
+  const { data: userData } = await supabase.auth.getUser();
+  const me = userData.user?.id;
+  if (!me) return null;
+
+  const { data: matches } = await supabase
+    .from('matches')
+    .select('id')
+    .or(`and(user_a.eq.${me},user_b.eq.${otherId}),and(user_a.eq.${otherId},user_b.eq.${me})`)
+    .maybeSingle();
+
+  return matches?.id ?? null;
+}
+
 export default function Chat() {
   const route = useRoute<any>();
   const nav = useNavigation<any>();
   const { setActiveMatch } = useChatNotify();
-  const { matchId, otherId, name } = route.params as { matchId: string; otherId?: string; name?: string };
+  const { matchId: providedMatchId, otherId, name } = route.params as { matchId?: string; otherId: string; name?: string };
   const [me, setMe] = React.useState<string | null>(null);
+  const [matchId, setMatchId] = React.useState<string | null>(providedMatchId ?? null);
   const [messages, setMessages] = React.useState<ChatMessage[]>([]);
   const [input, setInput] = React.useState('');
   const [sending, setSending] = React.useState(false);
@@ -32,6 +47,12 @@ export default function Chat() {
     supabase.auth.getSession().then(({ data }) => setMe(data.session?.user?.id ?? null));
   }, []);
 
+  // Find matchId if not provided (for backward compatibility with match-based navigation)
+  React.useEffect(() => {
+    if (providedMatchId || !otherId) return;
+    findMatchId(otherId).then(setMatchId);
+  }, [providedMatchId, otherId]);
+
   // Check if user is blocked on mount
   React.useEffect(() => {
     if (!otherId) return;
@@ -39,6 +60,7 @@ export default function Chat() {
   }, [otherId]);
 
   React.useEffect(() => {
+    if (!matchId) return;
     (async () => {
       try {
         const list = await repo.list(matchId, 100);
@@ -71,9 +93,9 @@ export default function Chat() {
             setTimeout(() => scrollRef.current?.scrollToEnd?.({ animated: true }), 0);
             return next;
           });
-          // If the incoming message is from the other user, refresh read state
-          if (meRef.current) {
-            markThreadRead(meRef.current, matchId).catch(() => {});
+          // If the incoming message is from the other user, mark thread as read
+          if (otherId) {
+            markThreadRead(otherId).catch(() => {});
           }
         }
       )
@@ -84,20 +106,21 @@ export default function Chat() {
     };
   }, [matchId, otherId]);
 
-  const meRef = React.useRef<string | null>(null);
-  React.useEffect(() => { meRef.current = me; }, [me]);
-
   // Mark active thread and auto-mark read on focus
   useFocusEffect(
     React.useCallback(() => {
-      setActiveMatch(matchId);
-      if (me && matchId) {
-        markThreadRead(me, matchId).catch(() => {});
+      if (matchId) {
+        setActiveMatch(matchId);
+      }
+      if (otherId) {
+        markThreadRead(otherId).catch(() => {});
+      }
+      if (matchId) {
         // Also refresh the other user's last read status
         getOtherLastRead(matchId).then(setOtherLastRead).catch(() => {});
       }
       return () => setActiveMatch(null);
-    }, [me, matchId, setActiveMatch])
+    }, [otherId, matchId, setActiveMatch])
   );
 
 
@@ -123,8 +146,12 @@ export default function Chat() {
       }
       
       try {
+        if (!matchId) {
+          Alert.alert('Error', 'Chat session not found.');
+          return;
+        }
         await repo.send(matchId, trimmed);
-        if (me) await markThreadRead(me, matchId);
+        if (otherId) await markThreadRead(otherId);
       } catch (dbError) {
         console.error('[Chat] Database operation failed:', dbError);
         Alert.alert('Demo Mode', 'Chat functionality is in demo mode. Full messaging will be available once the database is set up.');
