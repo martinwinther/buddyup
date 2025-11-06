@@ -1,11 +1,15 @@
 import React from 'react';
-import { View, Text, FlatList, Pressable, TextInput, RefreshControl } from 'react-native';
+import { View, Text, FlatList, Pressable, TextInput, RefreshControl, TouchableOpacity } from 'react-native';
 import { Image } from 'expo-image';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { formatRelative } from '../../lib/time';
 import { fetchInbox, markThreadRead, type InboxThread } from '../../lib/chat';
 import { supabase } from '../../lib/supabase';
+import { useLikes } from '../../hooks/useLikes';
+import LikeListItem from '../../components/LikeListItem';
+
+type FilterTab = 'all' | 'messages' | 'likes';
 
 export default function Matches() {
   const nav = useNavigation<any>();
@@ -15,6 +19,7 @@ export default function Matches() {
   const [refreshing, setRefreshing] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [searchQuery, setSearchQuery] = React.useState('');
+  const [tab, setTab] = React.useState<FilterTab>('all');
 
   const load = React.useCallback(async () => {
     setError(null);
@@ -30,6 +35,13 @@ export default function Matches() {
   }, []);
 
   React.useEffect(() => { load(); }, [load]);
+
+  const threadUserIds = React.useMemo(() => new Set(items.map(t => t.other_user_id)), [items]);
+
+  const { likes } = useLikes({
+    limit: 100,
+    excludeUserIds: tab === 'likes' ? [] : Array.from(threadUserIds),
+  });
 
   // Setup realtime subscription for new messages
   React.useEffect(() => {
@@ -98,6 +110,10 @@ export default function Matches() {
     nav.navigate('Chat', { otherId: item.other_user_id, name: item.other_name });
   };
 
+  const openLikeChat = (userId: string) => {
+    nav.navigate('Chat', { otherId: userId });
+  };
+
   const renderItem = ({ item }: { item: InboxThread }) => {
     const unread = item.unread_count ?? 0;
     return (
@@ -142,6 +158,9 @@ export default function Matches() {
     );
   };
 
+  const displayedThreads = tab === 'likes' ? [] : filtered;
+  const displayedLikes = (tab === 'all' || tab === 'likes') ? likes : [];
+
   return (
     <View className="flex-1 bg-[#0a0a0a]">
       {/* Header */}
@@ -176,6 +195,19 @@ export default function Matches() {
             </Pressable>
           )}
         </View>
+
+        {/* Filter tabs */}
+        <View className="flex-row bg-zinc-900 rounded-xl p-1">
+          {(['all', 'messages', 'likes'] as FilterTab[]).map(k => (
+            <TouchableOpacity
+              key={k}
+              onPress={() => setTab(k)}
+              className={`flex-1 py-2 rounded-lg ${tab === k ? 'bg-zinc-800' : ''}`}
+            >
+              <Text className="text-center text-zinc-200 capitalize">{k}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
       </View>
 
       {/* Body */}
@@ -192,10 +224,10 @@ export default function Matches() {
             <Text className="text-zinc-100">Retry</Text>
           </Pressable>
         </View>
-      ) : filtered.length === 0 ? (
+      ) : displayedThreads.length === 0 && displayedLikes.length === 0 ? (
         <View className="flex-1 items-center justify-center px-6">
           <Text className="text-zinc-400 text-center">
-            {searchQuery ? 'No conversations found.' : 'No matches yet'}
+            {searchQuery ? 'No conversations found.' : tab === 'likes' ? 'No likes yet' : 'No matches yet'}
           </Text>
           {!searchQuery && (
             <Text className="text-zinc-500 text-center mt-1">Swipe right to connect</Text>
@@ -203,9 +235,24 @@ export default function Matches() {
         </View>
       ) : (
         <FlatList
-          data={filtered}
-          keyExtractor={(item) => item.other_user_id}
-          renderItem={renderItem}
+          data={[...displayedThreads, ...displayedLikes]}
+          keyExtractor={(item) => 'other_user_id' in item ? item.other_user_id : `like-${item.user_id}-${item.created_at}`}
+          renderItem={({ item }) => {
+            if ('other_user_id' in item) {
+              return renderItem({ item });
+            } else {
+              return (
+                <LikeListItem
+                  userId={item.user_id}
+                  name={item.display_name ?? 'Someone'}
+                  photoUrl={item.photo_url}
+                  isSuper={item.is_super}
+                  subtitle={formatRelative(item.created_at)}
+                  onPress={openLikeChat}
+                />
+              );
+            }
+          }}
           refreshControl={<RefreshControl tintColor="#E5E7EB" refreshing={refreshing} onRefresh={onRefresh} />}
           initialNumToRender={12}
           removeClippedSubviews

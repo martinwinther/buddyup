@@ -15,7 +15,7 @@ export type SwipeDeckRef = { swipeLeft: () => void; swipeRight: () => void; };
 
 type Props = {
   candidates: Candidate[];
-  onSwipe: (id: string, dir: 'left' | 'right') => Promise<{ matched?: boolean } | void>;
+  onSwipe: (id: string, dir: 'left' | 'right' | 'super') => Promise<{ matched?: boolean } | void>;
   onPress?: (candidate: Candidate) => void;
 };
 
@@ -34,7 +34,7 @@ const SwipeDeck = forwardRef<SwipeDeckRef, Props>(({ candidates, onSwipe, onPres
   const rot = useSharedValue(0);
   const dragging = useSharedValue(false);
 
-  const doSwipe = (dir: 'left' | 'right') => {
+  const doSwipe = (dir: 'left' | 'right' | 'super') => {
     if (!top || isAnimating) return;
     setIsAnimating(true);
     setSwipingCard(top);

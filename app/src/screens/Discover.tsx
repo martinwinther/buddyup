@@ -94,10 +94,10 @@ export default function Discover() {
     }, [pager])
   );
 
-  const handleSwipe = async (id: string, dir: 'left' | 'right') => {
+  const handleSwipe = async (id: string, dir: 'left' | 'right' | 'super') => {
     try {
       const res = await swipesRepo.recordSwipe(id, dir);
-      if (dir === 'right' && res && res.matchId) {
+      if ((dir === 'right' || dir === 'super') && res && res.matchId) {
         const candidate = pager.items.find(c => c.id === id);
         const name = candidate?.display_name;
         showToast(name ? `You can now message ${name}` : 'Added to Messages');

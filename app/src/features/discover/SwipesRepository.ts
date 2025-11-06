@@ -6,7 +6,7 @@ type RecordSwipeResult = {
   otherId?: string;
 };
 
-export async function recordSwipe(targetId: string, direction: 'left' | 'right'): Promise<RecordSwipeResult> {
+export async function recordSwipe(targetId: string, direction: 'left' | 'right' | 'super'): Promise<RecordSwipeResult> {
   const { data: s } = await supabase.auth.getSession();
   const uid = s?.session?.user?.id;
   if (!uid) throw new Error('NO_SESSION');
@@ -49,7 +49,7 @@ export async function recordSwipe(targetId: string, direction: 'left' | 'right')
 }
 
 export class SwipesRepository {
-  async recordSwipe(targetId: string, direction: 'left' | 'right'): Promise<RecordSwipeResult> {
+  async recordSwipe(targetId: string, direction: 'left' | 'right' | 'super'): Promise<RecordSwipeResult> {
     const { data: s } = await supabase.auth.getSession();
     const uid = s?.session?.user?.id;
     if (!uid) throw new Error('NO_SESSION');
