@@ -7,8 +7,9 @@ import { markThreadRead } from '../../lib/chat';
 import { BlocksRepository } from '../../features/safety/BlocksRepository';
 import { blockUser } from '../../features/safety/SafetyRepository';
 import ReportModal from '../../components/ReportModal';
-import { supabase } from '../../lib/supabase';
+import { supabase, getAppBaseUrl } from '../../lib/supabase';
 import { pe } from '../../ui/platform';
+import { notifyNewMessage } from '../../lib/notifications';
 
 const repo = new MessagesRepository();
 const blocksRepo = new BlocksRepository();
@@ -152,6 +153,22 @@ export default function Chat() {
         }
         await repo.send(matchId, trimmed);
         if (otherId) await markThreadRead(otherId);
+        
+        // Send email notification (best-effort, non-blocking)
+        if (otherId && matchId) {
+          const preview = trimmed.slice(0, 120);
+          const baseUrl = getAppBaseUrl();
+          const threadUrl = baseUrl ? `${baseUrl}/chat?u=${otherId}` : undefined;
+          
+          notifyNewMessage({
+            matchId,
+            recipientId: otherId,
+            preview,
+            threadUrl,
+          }).catch(err => {
+            console.warn('[Chat] Email notification failed:', err);
+          });
+        }
       } catch (dbError) {
         console.error('[Chat] Database operation failed:', dbError);
         Alert.alert('Demo Mode', 'Chat functionality is in demo mode. Full messaging will be available once the database is set up.');

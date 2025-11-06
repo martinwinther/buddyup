@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TextInput, Pressable, Alert, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, TextInput, Pressable, Alert, ScrollView, KeyboardAvoidingView, Platform, Switch } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useNavigation } from '@react-navigation/native';
 import PhotoGridManager from '../../components/PhotoGridManager';
@@ -10,6 +10,7 @@ export default function EditProfile() {
   const [displayName, setDisplayName] = React.useState('');
   const [age, setAge] = React.useState<string>('');
   const [bio, setBio] = React.useState('');
+  const [notifyEmailMessages, setNotifyEmailMessages] = React.useState(true);
   const [saving, setSaving] = React.useState(false);
   const [loading, setLoading] = React.useState(true);
 
@@ -20,12 +21,13 @@ export default function EditProfile() {
       if (!uid) return;
       const { data } = await supabase
         .from('profiles')
-        .select('display_name, age, bio')
+        .select('display_name, age, bio, notify_email_messages')
         .eq('id', uid)
         .maybeSingle();
       setDisplayName(data?.display_name ?? '');
       setAge(data?.age != null ? String(data.age) : '');
       setBio(data?.bio ?? '');
+      setNotifyEmailMessages(data?.notify_email_messages ?? true);
       setLoading(false);
     })();
   }, []);
@@ -48,6 +50,7 @@ export default function EditProfile() {
           display_name: displayName.trim() || null,
           age: aNum,
           bio: bio.trim() || null,
+          notify_email_messages: notifyEmailMessages,
           last_active: new Date().toISOString(),
         })
         .eq('id', uid);
@@ -109,8 +112,21 @@ export default function EditProfile() {
         multiline
         placeholder="Say something about yourself…"
         placeholderTextColor="#9CA3AF"
-        className="min-h-[120px] px-3 py-3 rounded-xl bg-white/10 text-zinc-100"
+        className="min-h-[120px] px-3 py-3 rounded-xl bg-white/10 text-zinc-100 mb-6"
       />
+
+      <View className="flex-row items-center justify-between px-4 py-4 rounded-xl bg-white/10 border border-white/10">
+        <View className="flex-1 pr-4">
+          <Text className="text-zinc-100 font-medium mb-1">Email notifications</Text>
+          <Text className="text-zinc-400 text-sm">Get notified when someone sends you a message</Text>
+        </View>
+        <Switch
+          value={notifyEmailMessages}
+          onValueChange={setNotifyEmailMessages}
+          trackColor={{ false: '#52525b', true: '#14b8a6' }}
+          thumbColor="#ffffff"
+        />
+      </View>
 
       <Pressable onPress={save} disabled={saving} className="mt-6 px-4 py-3 rounded-2xl bg-teal-500/90">
         <Text className="text-zinc-900 text-center font-semibold">{saving ? 'Saving…' : 'Save changes'}</Text>

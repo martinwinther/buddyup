@@ -54,6 +54,10 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   },
 });
 
+export function getAppBaseUrl(): string {
+  return process.env.EXPO_PUBLIC_APP_WEB_URL ?? '';
+}
+
 console.log('🔐 Supabase initialized with public anon key');
 console.log(
   '⚠️ REMINDER: SUPABASE_SERVICE_ROLE_KEY should ONLY be used in Edge Functions (server-side)'
