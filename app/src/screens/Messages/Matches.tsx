@@ -8,11 +8,13 @@ import { fetchInbox, markThreadRead, type InboxThread } from '../../lib/chat';
 import { supabase } from '../../lib/supabase';
 import { useLikes } from '../../hooks/useLikes';
 import LikeListItem from '../../components/LikeListItem';
+import { useBlocks } from '../../hooks/useBlocks';
 
 type FilterTab = 'all' | 'messages' | 'likes';
 
 export default function Matches() {
   const nav = useNavigation<any>();
+  const { allBlockedIds } = useBlocks();
   const [items, setItems] = React.useState<InboxThread[]>([]);
   const [filtered, setFiltered] = React.useState<InboxThread[]>([]);
   const [loading, setLoading] = React.useState(true);
@@ -40,7 +42,7 @@ export default function Matches() {
 
   const { likes } = useLikes({
     limit: 100,
-    excludeUserIds: tab === 'likes' ? [] : Array.from(threadUserIds),
+    excludeUserIds: tab === 'likes' ? allBlockedIds : [...Array.from(threadUserIds), ...allBlockedIds],
   });
 
   // Setup realtime subscription for new messages
@@ -89,15 +91,16 @@ export default function Matches() {
 
   React.useEffect(() => {
     const needle = searchQuery.trim().toLowerCase();
-    if (!needle) return setFiltered(items);
+    const nonBlocked = items.filter(item => !allBlockedIds.includes(item.other_user_id));
+    if (!needle) return setFiltered(nonBlocked);
     setFiltered(
-      items.filter((item) => {
+      nonBlocked.filter((item) => {
         const name = (item.other_name ?? '').toLowerCase();
         const msg = (item.last_message ?? '').toLowerCase();
         return name.includes(needle) || msg.includes(needle);
       })
     );
-  }, [searchQuery, items]);
+  }, [searchQuery, items, allBlockedIds]);
 
   const openChat = async (item: InboxThread) => {
     // Optimistically clear unread in UI

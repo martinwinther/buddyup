@@ -7,12 +7,14 @@ import { ProfileDetailRepository } from '../../features/profile/ProfileDetailRep
 import { recordSwipe } from '../../features/discover/SwipesRepository';
 import { LikesRepository } from '../../features/likes/LikesRepository';
 import { ProfilePhotosRepository } from '../../features/profile/ProfilePhotosRepository';
+import { BlocksRepository } from '../../features/safety/BlocksRepository';
 import { pe } from '../../ui/platform';
 
 type RouteParams = { userId: string; fallback?: { name?: string | null; age?: number | null; photoUrl?: string | null; distanceKm?: number | null } };
 
 const detailsRepo = new ProfileDetailRepository();
 const likesRepo = new LikesRepository();
+const blocksRepo = new BlocksRepository();
 
 export default function ProfileSheet() {
   const nav = useNavigation<any>();
@@ -37,6 +39,7 @@ export default function ProfileSheet() {
 
   const [loading, setLoading] = React.useState(true);
   const [d, setD] = React.useState<Awaited<ReturnType<typeof detailsRepo.load>> | null>(null);
+  const [isBlocked, setIsBlocked] = React.useState(false);
   const name = d?.display_name ?? fallback?.name ?? 'Buddy';
   const age = d?.age ?? fallback?.age ?? null;
   const photoUrl = d?.photo_url ?? fallback?.photoUrl ?? null;
@@ -63,6 +66,13 @@ export default function ProfileSheet() {
       setGallery((list ?? []).map(p => ({ id: p.id, url: p.url })));
     })();
   }, [userId, photosRepo]);
+
+  React.useEffect(() => {
+    (async () => {
+      const blocked = await blocksRepo.isBlockedPair(userId);
+      setIsBlocked(blocked);
+    })();
+  }, [userId]);
 
   const like = async () => {
     try {
@@ -96,6 +106,26 @@ export default function ProfileSheet() {
     } catch (e: any) {
       console.error('[ProfileSheet] message error:', e);
       Alert.alert('Error', e.message ?? 'Could not open chat.');
+    }
+  };
+
+  const handleBlock = async () => {
+    try {
+      await blocksRepo.block(userId);
+      setIsBlocked(true);
+      Alert.alert('Blocked', `You won't see ${name} anymore.`);
+    } catch (e: any) {
+      Alert.alert('Error', e.message ?? 'Could not block user.');
+    }
+  };
+
+  const handleUnblock = async () => {
+    try {
+      await blocksRepo.unblock(userId);
+      setIsBlocked(false);
+      Alert.alert('Unblocked', `You can now see ${name} again.`);
+    } catch (e: any) {
+      Alert.alert('Error', e.message ?? 'Could not unblock user.');
     }
   };
 
@@ -201,18 +231,45 @@ export default function ProfileSheet() {
             </View>
           ) : null}
 
-          {/* Report button */}
-          <Pressable
-            onPress={() => nav.navigate('ReportUser', { otherId: userId, from: 'profile' })}
-            className="mt-6 px-3 py-2 rounded-2xl bg-white/10 border border-white/10 self-start"
-            hitSlop={8}
-            android_ripple={{ color: 'rgba(255,255,255,0.15)', borderless: false }}
-          >
-            <View className="flex-row items-center gap-2">
-              <Ionicons name="flag-outline" size={16} color="#FCA5A5" />
-              <Text className="text-red-300">Report</Text>
-            </View>
-          </Pressable>
+          {/* Safety actions */}
+          <View className="mt-6 flex-row gap-2">
+            {!isBlocked ? (
+              <Pressable
+                onPress={handleBlock}
+                className="px-3 py-2 rounded-2xl bg-white/10 border border-white/10"
+                hitSlop={8}
+                android_ripple={{ color: 'rgba(255,255,255,0.15)', borderless: false }}
+              >
+                <View className="flex-row items-center gap-2">
+                  <Ionicons name="ban-outline" size={16} color="#FCA5A5" />
+                  <Text className="text-red-300">Block</Text>
+                </View>
+              </Pressable>
+            ) : (
+              <Pressable
+                onPress={handleUnblock}
+                className="px-3 py-2 rounded-2xl bg-white/10 border border-white/10"
+                hitSlop={8}
+                android_ripple={{ color: 'rgba(255,255,255,0.15)', borderless: false }}
+              >
+                <View className="flex-row items-center gap-2">
+                  <Ionicons name="checkmark-circle-outline" size={16} color="#34D399" />
+                  <Text className="text-teal-300">Unblock</Text>
+                </View>
+              </Pressable>
+            )}
+            <Pressable
+              onPress={() => nav.navigate('ReportUser', { otherId: userId, from: 'profile' })}
+              className="px-3 py-2 rounded-2xl bg-white/10 border border-white/10"
+              hitSlop={8}
+              android_ripple={{ color: 'rgba(255,255,255,0.15)', borderless: false }}
+            >
+              <View className="flex-row items-center gap-2">
+                <Ionicons name="flag-outline" size={16} color="#FCA5A5" />
+                <Text className="text-red-300">Report</Text>
+              </View>
+            </Pressable>
+          </View>
         </View>
       </ScrollView>
     </View>

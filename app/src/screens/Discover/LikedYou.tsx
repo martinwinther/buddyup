@@ -4,6 +4,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { Image } from 'expo-image';
 import { useNavigation } from '@react-navigation/native';
 import { InboundLikesRepository } from '../../features/likes/InboundLikesRepository';
+import { useBlocks } from '../../hooks/useBlocks';
 
 type Row = {
   user_id: string;
@@ -16,6 +17,7 @@ type Row = {
 
 export default function LikedYou() {
   const nav = useNavigation<any>();
+  const { allBlockedIds } = useBlocks();
   const repo = React.useMemo(() => new InboundLikesRepository(), []);
   const [rows, setRows] = React.useState<Row[]>([]);
   const [loading, setLoading] = React.useState(true);
@@ -32,6 +34,11 @@ export default function LikedYou() {
   }, [repo]);
 
   React.useEffect(() => { load(); }, [load]);
+
+  const visibleRows = React.useMemo(
+    () => rows.filter(row => !allBlockedIds.includes(row.user_id)),
+    [rows, allBlockedIds]
+  );
 
   const likeAndMessage = async (otherId: string) => {
     setBusyId(otherId);
@@ -87,11 +94,11 @@ export default function LikedYou() {
 
       {loading ? (
         <Text className="text-zinc-400 mt-4">Loading…</Text>
-      ) : rows.length === 0 ? (
+      ) : visibleRows.length === 0 ? (
         <Text className="text-zinc-400 mt-4">No likes yet. Come back later ✨</Text>
       ) : (
         <FlatList
-          data={rows}
+          data={visibleRows}
           keyExtractor={(it) => it.user_id}
           ItemSeparatorComponent={() => <View className="h-px bg-white/10" />}
           renderItem={renderItem}

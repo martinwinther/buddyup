@@ -18,6 +18,7 @@ import { supabase } from '../lib/supabase';
 import { pe } from '../ui/platform';
 import { blockUser } from '../features/safety/SafetyRepository';
 import { useChatNotify } from '../features/messages';
+import { useBlocks } from '../hooks/useBlocks';
 
 const swipesRepo = new SwipesRepository();
 const prefsRepo = new DiscoveryPrefsRepository();
@@ -26,6 +27,7 @@ export default function Discover() {
   const nav = useNavigation<any>();
   const route = useRoute<any>();
   const { unreadTotal } = useChatNotify();
+  const { isBlocked } = useBlocks();
   const deckRef = React.useRef<SwipeDeckRef>(null);
   const pager = useDeckPager();
   const [toast, setToast] = React.useState<{ visible: boolean; message: string }>({ visible: false, message: '' });
@@ -131,7 +133,10 @@ export default function Discover() {
     setReportOpen(true);
   };
 
-  const cards = pager.items;
+  const cards = React.useMemo(
+    () => pager.items.filter(card => !isBlocked(card.id)),
+    [pager.items, isBlocked]
+  );
 
   const menuItems = [
     { 
