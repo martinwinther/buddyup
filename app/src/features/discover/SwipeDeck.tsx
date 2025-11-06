@@ -34,6 +34,13 @@ const SwipeDeck = forwardRef<SwipeDeckRef, Props>(({ candidates, onSwipe, onPres
   const rot = useSharedValue(0);
   const dragging = useSharedValue(false);
 
+  const clearFrozenStates = () => {
+    setSwipingCard(null);
+    setFrozenNext(null);
+    setFrozenThird(null);
+    setIsAnimating(false);
+  };
+
   const doSwipe = (dir: 'left' | 'right' | 'super') => {
     if (!top || isAnimating) return;
     setIsAnimating(true);
@@ -44,6 +51,7 @@ const SwipeDeck = forwardRef<SwipeDeckRef, Props>(({ candidates, onSwipe, onPres
     const cardId = top.id;
     x.value = withTiming(toX, { duration: 180 }, (finished) => {
       if (finished) {
+        runOnJS(clearFrozenStates)();
         runOnJS(onSwipe)(cardId, dir);
       }
       x.value = 0; y.value = 0; rot.value = 0; dragging.value = false;
