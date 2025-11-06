@@ -3,7 +3,8 @@ import { View, Text, FlatList, TextInput, Pressable, KeyboardAvoidingView, Platf
 import { useRoute, useFocusEffect, useNavigation } from '@react-navigation/native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { MessagesRepository, type ChatMessage, getOtherLastRead, useChatNotify } from '../../features/messages';
-import { markThreadRead } from '../../lib/chat';
+import { markThreadRead, upsertMessageRead, listenOtherRead } from '../../lib/chat';
+import { typingChannel } from '../../lib/realtime';
 import { BlocksRepository } from '../../features/safety/BlocksRepository';
 import { blockUser } from '../../features/safety/SafetyRepository';
 import ReportModal from '../../components/ReportModal';
@@ -40,9 +41,12 @@ export default function Chat() {
   const [sending, setSending] = React.useState(false);
   const [menuOpen, setMenuOpen] = React.useState(false);
   const [otherLastRead, setOtherLastRead] = React.useState<string | null>(null);
+  const [otherTyping, setOtherTyping] = React.useState(false);
   const [reportOpen, setReportOpen] = React.useState(false);
   const [isBlocked, setIsBlocked] = React.useState(false);
   const scrollRef = React.useRef<FlatList | null>(null);
+  const typingSenderRef = React.useRef<((userId: string, isTyping: boolean) => void) | null>(null);
+  const typingTimeout = React.useRef<NodeJS.Timeout | null>(null);
 
   React.useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setMe(data.session?.user?.id ?? null));
@@ -112,6 +116,7 @@ export default function Chat() {
     React.useCallback(() => {
       if (matchId) {
         setActiveMatch(matchId);
+        upsertMessageRead(matchId).catch(() => {});
       }
       if (otherId) {
         markThreadRead(otherId).catch(() => {});
@@ -123,6 +128,31 @@ export default function Chat() {
       return () => setActiveMatch(null);
     }, [otherId, matchId, setActiveMatch])
   );
+
+  // Update message_reads whenever messages change while screen is focused
+  React.useEffect(() => {
+    if (matchId && messages.length > 0) {
+      upsertMessageRead(matchId).catch(() => {});
+    }
+  }, [messages.length, matchId]);
+
+  // Subscribe to other user's read state changes
+  React.useEffect(() => {
+    if (!matchId || !otherId) return;
+    return listenOtherRead(matchId, otherId, (iso) => setOtherLastRead(iso));
+  }, [matchId, otherId]);
+
+  // Typing channel subscription
+  React.useEffect(() => {
+    if (!matchId || !otherId) return;
+    const { sendTyping, unsubscribe } = typingChannel(matchId, (uid, isTyping) => {
+      if (uid === otherId) {
+        setOtherTyping(isTyping);
+      }
+    });
+    typingSenderRef.current = sendTyping;
+    return unsubscribe;
+  }, [matchId, otherId]);
 
 
   const send = async () => {
@@ -182,11 +212,30 @@ export default function Chat() {
     }
   };
 
+  const onChangeText = (text: string) => {
+    setInput(text);
+    if (!me) return;
+    
+    // Send typing=true immediately
+    typingSenderRef.current?.(me, true);
+    
+    // Clear existing timeout and set new one to send typing=false
+    if (typingTimeout.current) {
+      clearTimeout(typingTimeout.current);
+    }
+    typingTimeout.current = setTimeout(() => {
+      typingSenderRef.current?.(me, false);
+    }, 1200);
+  };
+
   const renderItem = ({ item, index }: { item: ChatMessage; index: number }) => {
     const mine = item.sender_id === me;
     
-    // Check if this is the last message I sent
-    const isMyLastMessage = mine && index === messages.length - 1;
+    // Find last outgoing message from me
+    const myMessages = messages.filter(m => m.sender_id === me);
+    const myLastMessage = myMessages.length > 0 ? myMessages[myMessages.length - 1] : null;
+    const isMyLastMessage = mine && myLastMessage?.id === item.id;
+    
     const showSeen = isMyLastMessage && 
       otherLastRead && 
       new Date(otherLastRead).getTime() >= new Date(item.created_at).getTime();
@@ -197,7 +246,7 @@ export default function Chat() {
           <Text className={`${mine ? 'text-zinc-900' : 'text-zinc-100'}`}>{item.body}</Text>
         </View>
         {showSeen && (
-          <Text className="text-[11px] text-zinc-500 mt-0.5">Seen</Text>
+          <Text className="text-[10px] text-zinc-400 mt-1">Seen</Text>
         )}
       </View>
     );
@@ -271,10 +320,17 @@ export default function Chat() {
           onContentSizeChange={() => {}}
         />
       </View>
+      
+      {otherTyping && (
+        <View className="px-4 pb-1">
+          <Text className="text-zinc-400 text-xs">Typing…</Text>
+        </View>
+      )}
+      
       <View className="flex-row items-center gap-2 px-3 pb-6">
         <TextInput
           value={input}
-          onChangeText={setInput}
+          onChangeText={onChangeText}
           placeholder="Message…"
           placeholderTextColor="#9CA3AF"
           className="flex-1 px-3 py-3 rounded-2xl bg-white/10 text-zinc-100"

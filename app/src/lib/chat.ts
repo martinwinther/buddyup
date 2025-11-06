@@ -55,3 +55,51 @@ export async function getTotalUnreadCount(): Promise<number> {
   return threads.reduce((sum, thread) => sum + thread.unread_count, 0);
 }
 
+/**
+ * Upsert message read status for current user in a match.
+ * Updates last_read_at in message_reads table.
+ */
+export async function upsertMessageRead(matchId: string): Promise<void> {
+  const { data: u } = await supabase.auth.getUser();
+  const uid = u.user?.id;
+  if (!uid) return;
+
+  await supabase.from('message_reads').upsert(
+    { user_id: uid, match_id: matchId, last_read_at: new Date().toISOString() },
+    { onConflict: 'user_id,match_id' }
+  );
+}
+
+/**
+ * Listen to the other participant's read changes for this match.
+ * Returns an unsubscribe function.
+ */
+export function listenOtherRead(
+  matchId: string,
+  otherUserId: string,
+  onUpdate: (iso: string) => void
+): () => void {
+  const ch = supabase
+    .channel(`reads:${matchId}:${otherUserId}`)
+    .on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'message_reads',
+        filter: `match_id=eq.${matchId}`,
+      },
+      (payload: any) => {
+        const row = payload.new ?? payload.old;
+        if (row?.user_id === otherUserId && row?.last_read_at) {
+          onUpdate(row.last_read_at);
+        }
+      }
+    )
+    .subscribe();
+
+  return () => {
+    supabase.removeChannel(ch);
+  };
+}
+
