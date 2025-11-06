@@ -65,7 +65,9 @@ export default function FullProfileCard({
             source={{ uri: displayPhotos[currentPhotoIndex].url }}
             style={{ width: '100%', height: '100%' }}
             contentFit="cover"
-            transition={150}
+            cachePolicy="memory-disk"
+            placeholder={{ blurhash: 'L6PZfSi_.AyE_3t7t7R**0o#DgR4' }}
+            transition={0}
           />
           
           {/* Tap zones for photo navigation (only if multiple photos) */}
