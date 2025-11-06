@@ -52,15 +52,17 @@ const SwipeDeck = forwardRef<SwipeDeckRef, Props>(({ candidates, onSwipe, onPres
   // Clear frozen states when the candidates array actually changes
   React.useEffect(() => {
     if (swipingCard && swipingCard.id !== top?.id) {
-      // Reset animation values and clear frozen states atomically
-      x.value = 0;
-      y.value = 0;
-      rot.value = 0;
-      dragging.value = false;
+      // First clear frozen states to prevent showing old card
       setSwipingCard(null);
       setFrozenNext(null);
       setFrozenThird(null);
       setIsAnimating(false);
+      
+      // Animate position back to center smoothly - the fade covers the transition
+      x.value = withTiming(0, { duration: 150 });
+      y.value = withTiming(0, { duration: 150 });
+      rot.value = withTiming(0, { duration: 150 });
+      dragging.value = false;
     }
   }, [top?.id, swipingCard, x, y, rot, dragging]);
 
@@ -101,14 +103,20 @@ const SwipeDeck = forwardRef<SwipeDeckRef, Props>(({ candidates, onSwipe, onPres
   const composed = useMemo(() => Gesture.Simultaneous(pan, tap), [pan, tap]);
 
   const topStyle = useAnimatedStyle(() => {
-    // Fade out when off-screen, fade in when returning to center
-    const isOffScreen = Math.abs(x.value) > width * 0.5;
+    // Fade out when off-screen, fade in smoothly when at center
+    const absX = Math.abs(x.value);
+    const isOffScreen = absX > width * 0.5;
+    
+    // If off-screen, hide completely
+    // If at center (x very close to 0), show fully
+    // In between, fade smoothly
     const opacity = isOffScreen ? 0 : interpolate(
-      Math.abs(x.value),
-      [width * 0.5, 0],
+      absX,
+      [width * 0.3, 0],
       [0, 1],
       Extrapolate.CLAMP
     );
+    
     return {
       position: 'absolute',
       width: '100%',
