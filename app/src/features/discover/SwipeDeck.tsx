@@ -46,14 +46,13 @@ const SwipeDeck = forwardRef<SwipeDeckRef, Props>(({ candidates, onSwipe, onPres
       if (finished) {
         runOnJS(onSwipe)(cardId, dir);
       }
-      // Keep values off-screen until candidates update - the useEffect will reset when ready
     });
   };
 
   // Clear frozen states when the candidates array actually changes
   React.useEffect(() => {
     if (swipingCard && swipingCard.id !== top?.id) {
-      // Reset animation values and clear frozen states
+      // Reset animation values and clear frozen states atomically
       x.value = 0;
       y.value = 0;
       rot.value = 0;
@@ -101,12 +100,17 @@ const SwipeDeck = forwardRef<SwipeDeckRef, Props>(({ candidates, onSwipe, onPres
 
   const composed = useMemo(() => Gesture.Simultaneous(pan, tap), [pan, tap]);
 
-  const topStyle = useAnimatedStyle(() => ({
-    position: 'absolute',
-    width: '100%',
-    height: '100%',
-    transform: [{ translateX: x.value }, { translateY: y.value }, { rotateZ: `${rot.value}deg` }],
-  }));
+  const topStyle = useAnimatedStyle(() => {
+    // Hide the card when it's off-screen to prevent flashing during state transitions
+    const isOffScreen = Math.abs(x.value) > width * 0.5;
+    return {
+      position: 'absolute',
+      width: '100%',
+      height: '100%',
+      transform: [{ translateX: x.value }, { translateY: y.value }, { rotateZ: `${rot.value}deg` }],
+      opacity: isOffScreen ? 0 : 1,
+    };
+  });
 
   const nextStyle = useAnimatedStyle(() => {
     const scale = interpolate(Math.abs(x.value), [0, SWIPE_OUT], [1, 0.98], Extrapolate.CLAMP);
@@ -127,7 +131,7 @@ const SwipeDeck = forwardRef<SwipeDeckRef, Props>(({ candidates, onSwipe, onPres
 
   const Card = (c: Candidate | undefined, style?: any) =>
     c ? (
-      <Animated.View style={style}>
+      <Animated.View key={c.id} style={style}>
         <FullProfileCard
           name={c.display_name}
           age={c.age}
@@ -154,7 +158,7 @@ const SwipeDeck = forwardRef<SwipeDeckRef, Props>(({ candidates, onSwipe, onPres
 
         {displayCard ? (
           <GestureDetector gesture={composed}>
-            <Animated.View style={[topStyle]}>
+            <Animated.View key={displayCard.id} style={[topStyle]}>
               {/* LIKE / NOPE stamps */}
               <Animated.View style={[{ position: 'absolute', top: 24, left: 24, paddingHorizontal: 10, paddingVertical: 6, borderWidth: 3, borderColor: 'rgba(34,197,94,0.9)', borderRadius: 12, zIndex: 10 }, likeStyle]}>
                 <Text style={{ color: 'rgb(34,197,94)', fontSize: 18, fontWeight: '900', letterSpacing: 2 }}>LIKE</Text>
@@ -164,6 +168,7 @@ const SwipeDeck = forwardRef<SwipeDeckRef, Props>(({ candidates, onSwipe, onPres
               </Animated.View>
 
               <FullProfileCard
+                key={displayCard.id}
                 name={displayCard.display_name}
                 age={displayCard.age}
                 bio={displayCard.bio}
