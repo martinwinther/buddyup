@@ -11,6 +11,8 @@ import ReportModal from '../../components/ReportModal';
 import { supabase, getAppBaseUrl } from '../../lib/supabase';
 import { pe } from '../../ui/platform';
 import { notifyNewMessage } from '../../lib/notifications';
+import { mapSupabaseError } from '../../lib/errors';
+import { msgPerMinute, msgShortBurst, msToS } from '../../lib/rateLimit';
 
 const repo = new MessagesRepository();
 const blocksRepo = new BlocksRepository();
@@ -44,9 +46,42 @@ export default function Chat() {
   const [otherTyping, setOtherTyping] = React.useState(false);
   const [reportOpen, setReportOpen] = React.useState(false);
   const [isBlocked, setIsBlocked] = React.useState(false);
+  const [lastMyMsg, setLastMyMsg] = React.useState<{ text: string; at: number } | null>(null);
+  const [cooldownSec, setCooldownSec] = React.useState(0);
+  const [inlineWarning, setInlineWarning] = React.useState<string | null>(null);
   const scrollRef = React.useRef<FlatList | null>(null);
   const typingSenderRef = React.useRef<((userId: string, isTyping: boolean) => void) | null>(null);
   const typingTimeout = React.useRef<NodeJS.Timeout | null>(null);
+  const cooldownTimer = React.useRef<NodeJS.Timeout | null>(null);
+
+  const startCooldown = React.useCallback((ms: number) => {
+    if (!ms) return;
+    if (cooldownTimer.current) {
+      clearInterval(cooldownTimer.current);
+    }
+    let remaining = Math.ceil(ms / 1000);
+    setCooldownSec(remaining);
+    cooldownTimer.current = setInterval(() => {
+      remaining -= 1;
+      setCooldownSec((prev) => {
+        const next = Math.max(0, remaining);
+        return next;
+      });
+      if (remaining <= 0 && cooldownTimer.current) {
+        clearInterval(cooldownTimer.current);
+        cooldownTimer.current = null;
+      }
+    }, 1000);
+  }, []);
+
+  React.useEffect(() => {
+    return () => {
+      if (cooldownTimer.current) {
+        clearInterval(cooldownTimer.current);
+        cooldownTimer.current = null;
+      }
+    };
+  }, []);
 
   React.useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setMe(data.session?.user?.id ?? null));
@@ -136,6 +171,18 @@ export default function Chat() {
     }
   }, [messages.length, matchId]);
 
+  React.useEffect(() => {
+    if (!me || messages.length === 0) return;
+    const myMessages = messages.filter((m) => m.sender_id === me);
+    if (myMessages.length === 0) return;
+    const latest = myMessages[myMessages.length - 1];
+    const latestAt = new Date(latest.created_at).getTime();
+    setLastMyMsg((prev) => {
+      if (prev && prev.at >= latestAt) return prev;
+      return { text: latest.body, at: latestAt };
+    });
+  }, [messages, me]);
+
   // Subscribe to other user's read state changes
   React.useEffect(() => {
     if (!matchId || !otherId) return;
@@ -156,63 +203,95 @@ export default function Chat() {
 
 
   const send = async () => {
+    if (cooldownSec > 0) return;
+
     const trimmed = input.trim();
     if (!trimmed) return;
-    
+
+    if (trimmed.length > 600) {
+      setInlineWarning('Message too long (max 600 characters).');
+      return;
+    }
+
+    const now = Date.now();
+    if (lastMyMsg && now - lastMyMsg.at < 120_000 && lastMyMsg.text === trimmed) {
+      setInlineWarning('You just sent this message. Try rephrasing.');
+      return;
+    }
+
+    if (isBlocked) {
+      Alert.alert('Blocked', 'Messaging is disabled between you and this user.');
+      return;
+    }
+
+    const burst = msgShortBurst.take();
+    const minute = msgPerMinute.take();
+    if (!burst.ok || !minute.ok) {
+      const waitMs = Math.max(burst.remainingMs ?? 0, minute.remainingMs ?? 0);
+      if (waitMs > 0) {
+        startCooldown(waitMs);
+      }
+      const waitSeconds = Math.max(msToS(burst.remainingMs), msToS(minute.remainingMs));
+      setInlineWarning(waitSeconds > 0 ? `You're sending too fast. Please wait ${waitSeconds}s.` : "You're sending too fast. Please wait a moment.");
+      return;
+    }
+
+    const otherIdParam = (route.params as any)?.otherId as string | undefined;
+    const currentMatchId = matchId;
+
     try {
       setSending(true);
-      setInput('');
-      
-      // For demo mode, we'll try to send but expect it to fail gracefully
-      // The database might not have the proper tables set up yet
-      
-      // Guard: check if either side blocked the other
-      const otherId = (route.params as any)?.otherId as string | undefined;
-      if (otherId) {
-        const blocked = await blocksRepo.isBlockedPair(otherId);
+      setInlineWarning(null);
+
+      if (!currentMatchId) {
+        setInlineWarning('Chat session not found.');
+        return;
+      }
+
+      if (otherIdParam) {
+        const blocked = await blocksRepo.isBlockedPair(otherIdParam);
         if (blocked) {
           Alert.alert('Blocked', 'Messaging is disabled between you and this user.');
           return;
         }
       }
-      
-      try {
-        if (!matchId) {
-          Alert.alert('Error', 'Chat session not found.');
-          return;
-        }
-        await repo.send(matchId, trimmed);
-        if (otherId) await markThreadRead(otherId);
-        
-        // Send email notification (best-effort, non-blocking)
-        if (otherId && matchId) {
-          const preview = trimmed.slice(0, 120);
-          const baseUrl = getAppBaseUrl();
-          const threadUrl = baseUrl ? `${baseUrl}/chat?u=${otherId}` : undefined;
-          
-          notifyNewMessage({
-            matchId,
-            recipientId: otherId,
-            preview,
-            threadUrl,
-          }).catch(err => {
-            console.warn('[Chat] Email notification failed:', err);
-          });
-        }
-      } catch (dbError) {
-        console.error('[Chat] Database operation failed:', dbError);
-        Alert.alert('Demo Mode', 'Chat functionality is in demo mode. Full messaging will be available once the database is set up.');
-        return;
+
+      await repo.send(currentMatchId, trimmed);
+      setInput('');
+      setLastMyMsg({ text: trimmed, at: now });
+      if (cooldownTimer.current) {
+        clearInterval(cooldownTimer.current);
+        cooldownTimer.current = null;
       }
-    } catch (error) {
+      setCooldownSec(0);
+
+      if (otherIdParam) await markThreadRead(otherIdParam);
+
+      if (otherIdParam && currentMatchId) {
+        const preview = trimmed.slice(0, 120);
+        const baseUrl = getAppBaseUrl();
+        const threadUrl = baseUrl ? `${baseUrl}/chat?u=${otherIdParam}` : undefined;
+
+        notifyNewMessage({
+          matchId: currentMatchId,
+          recipientId: otherIdParam,
+          preview,
+          threadUrl,
+        }).catch((err) => {
+          console.warn('[Chat] Email notification failed:', err);
+        });
+      }
+    } catch (error: any) {
       console.error('[Chat] Send error:', error);
-      Alert.alert('Error', 'Could not send message. Please try again.');
+      const friendly = mapSupabaseError(error?.message);
+      setInlineWarning(friendly);
     } finally {
       setSending(false);
     }
   };
 
   const onChangeText = (text: string) => {
+    setInlineWarning(null);
     setInput(text);
     if (!me) return;
     
@@ -251,6 +330,8 @@ export default function Chat() {
       </View>
     );
   };
+
+  const sendDisabled = sending || isBlocked || cooldownSec > 0;
 
   return (
     <KeyboardAvoidingView behavior={Platform.select({ ios: 'padding', android: undefined })} className="flex-1 bg-[#0a0a0a]">
@@ -327,22 +408,30 @@ export default function Chat() {
         </View>
       )}
       
-      <View className="flex-row items-center gap-2 px-3 pb-6">
-        <TextInput
-          value={input}
-          onChangeText={onChangeText}
-          placeholder="Message…"
-          placeholderTextColor="#9CA3AF"
-          className="flex-1 px-3 py-3 rounded-2xl bg-white/10 text-zinc-100"
-          editable={!sending && !isBlocked}
-        />
-        <Pressable 
-          onPress={send} 
-          disabled={sending || isBlocked} 
-          className={`px-4 py-3 rounded-2xl ${isBlocked ? 'bg-white/10' : 'bg-teal-500/90'}`}
-        >
-          <Text className={`font-semibold ${isBlocked ? 'text-zinc-500' : 'text-zinc-900'}`}>Send</Text>
-        </Pressable>
+      <View className="px-3 pb-6">
+        {inlineWarning ? (
+          <Text className="text-amber-300 text-xs mb-1">{inlineWarning}</Text>
+        ) : null}
+        {cooldownSec > 0 ? (
+          <Text className="text-zinc-400 text-xs mb-1">Slow mode: {cooldownSec}s</Text>
+        ) : null}
+        <View className="flex-row items-center gap-2 mt-2">
+          <TextInput
+            value={input}
+            onChangeText={onChangeText}
+            placeholder="Message…"
+            placeholderTextColor="#9CA3AF"
+            className="flex-1 px-3 py-3 rounded-2xl bg-white/10 text-zinc-100"
+            editable={!sending && !isBlocked}
+          />
+          <Pressable
+            onPress={send}
+            disabled={sendDisabled}
+            className={`px-4 py-3 rounded-2xl ${sendDisabled ? 'bg-white/10' : 'bg-teal-500/90'}`}
+          >
+            <Text className={`font-semibold ${sendDisabled ? 'text-zinc-500' : 'text-zinc-900'}`}>Send</Text>
+          </Pressable>
+        </View>
       </View>
 
       <ReportModal

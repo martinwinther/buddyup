@@ -19,6 +19,8 @@ import { pe } from '../ui/platform';
 import { blockUser } from '../features/safety/SafetyRepository';
 import { useChatNotify } from '../features/messages';
 import { useBlocks } from '../hooks/useBlocks';
+import { mapSupabaseError } from '../lib/errors';
+import { msToS, superPerDay, swipePer10s } from '../lib/rateLimit';
 
 const swipesRepo = new SwipesRepository();
 const prefsRepo = new DiscoveryPrefsRepository();
@@ -97,6 +99,21 @@ export default function Discover() {
   );
 
   const handleSwipe = async (id: string, dir: 'left' | 'right' | 'super') => {
+    const burst = swipePer10s.take();
+    if (!burst.ok) {
+      const wait = msToS(burst.remainingMs);
+      showToast(wait > 0 ? `Slow down. Try again in ${wait}s` : 'Slow down. Try again shortly');
+      return;
+    }
+
+    if (dir === 'super') {
+      const superCap = superPerDay.take();
+      if (!superCap.ok) {
+        showToast('Daily super-like limit reached');
+        return;
+      }
+    }
+
     try {
       const res = await swipesRepo.recordSwipe(id, dir);
       if ((dir === 'right' || dir === 'super') && res && res.matchId) {
@@ -105,9 +122,9 @@ export default function Discover() {
         showToast(name ? `You can now message ${name}` : 'Added to Messages');
       }
       onSwiped();
-    } catch (e) {
+    } catch (e: any) {
       console.warn('[discover] swipe error', e);
-      showToast('Something went wrong');
+      showToast(mapSupabaseError(e?.message));
     }
   };
 

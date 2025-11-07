@@ -5,6 +5,8 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { ProfileDetailRepository } from '../../features/profile/ProfileDetailRepository';
 import { recordSwipe } from '../../features/discover/SwipesRepository';
+import { mapSupabaseError } from '../../lib/errors';
+import { msToS, swipePer10s } from '../../lib/rateLimit';
 import { LikesRepository } from '../../features/likes/LikesRepository';
 import { ProfilePhotosRepository } from '../../features/profile/ProfilePhotosRepository';
 import { BlocksRepository } from '../../features/safety/BlocksRepository';
@@ -75,11 +77,17 @@ export default function ProfileSheet() {
   }, [userId]);
 
   const like = async () => {
+    const burst = swipePer10s.take();
+    if (!burst.ok) {
+      const wait = msToS(burst.remainingMs);
+      Alert.alert('Slow down', wait > 0 ? `Try again in ${wait}s.` : 'Try again shortly.');
+      return;
+    }
     try {
       await recordSwipe(userId, 'right');
       Alert.alert('Liked', `You liked ${name}. You can message now.`);
     } catch (e: any) {
-      Alert.alert('Error', e.message ?? 'Could not like user.');
+      Alert.alert('Error', mapSupabaseError(e?.message));
     }
   };
 

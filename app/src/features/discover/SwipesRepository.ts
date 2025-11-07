@@ -18,8 +18,8 @@ export async function recordSwipe(targetId: string, direction: 'left' | 'right' 
     direction,
   });
   if (insErr && (insErr as any).code !== '23505') {
-    // non-unique error → bubble up; UI can ignore/continue
     console.warn('[swipes] insert error', insErr);
+    throw insErr;
   }
 
   if (direction === 'left') return {};
@@ -61,8 +61,8 @@ export class SwipesRepository {
       direction,
     });
     if (insErr && (insErr as any).code !== '23505') {
-      // non-unique error → bubble up; UI can ignore/continue
       console.warn('[swipes] insert error', insErr);
+      throw insErr;
     }
 
     if (direction === 'left') return {};
