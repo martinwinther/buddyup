@@ -240,7 +240,7 @@ export default function ProfileSheet() {
           ) : null}
 
           {/* Safety actions */}
-          <View className="mt-6 flex-row gap-2">
+          <View className="mt-6 flex-row gap-2 flex-wrap">
             {!isBlocked ? (
               <Pressable
                 onPress={handleBlock}

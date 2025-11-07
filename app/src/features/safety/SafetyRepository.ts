@@ -1,6 +1,6 @@
 import { supabase } from '../../lib/supabase';
 
-export type ReportReason = 'harassment' | 'spam' | 'inappropriate' | 'fake' | 'other';
+export type ReportReason = 'harassment' | 'spam' | 'inappropriate' | 'fake' | 'underage' | 'other';
 
 export async function reportUser(opts: {
   reportedId: string;

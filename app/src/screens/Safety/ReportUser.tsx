@@ -11,6 +11,7 @@ const REASONS: { key: ReportReason; label: string }[] = [
   { key: 'spam',       label: 'Spam or scams' },
   { key: 'inappropriate', label: 'Inappropriate content' },
   { key: 'fake',       label: 'Fake or imposter' },
+  { key: 'underage',   label: 'Appears to be under 18' },
   { key: 'other',      label: 'Other' },
 ];
 

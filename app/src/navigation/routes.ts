@@ -5,6 +5,7 @@ export const Routes = {
   OnboardingProfile: 'OnboardingProfile',
   OnboardingCategories: 'OnboardingCategories',
   OnboardingFinish: 'OnboardingFinish',
+  OnboardingNotEligible: 'OnboardingNotEligible',
   Discover: 'Discover',
   Matches: 'Matches',
   Chat: 'Chat',

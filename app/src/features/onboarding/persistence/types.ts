@@ -1,6 +1,7 @@
 export type ProfileDraft = {
   displayName?: string;
   age?: number;
+  birthdate?: string; // ISO date string (YYYY-MM-DD)
   bio?: string;
   photoUri?: string | null;
 };

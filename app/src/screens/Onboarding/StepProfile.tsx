@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, Alert, ActivityIndicator, Pressable, Platform } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { ProfileData, RootStackParamList } from '../../types';
@@ -9,6 +9,9 @@ import { useSessionGate } from '../../lib/authGate';
 import { Routes } from '../../navigation/routes';
 import { Banner } from '../../components/Banner';
 import PhotoGridManager from '../../components/PhotoGridManager';
+import { calculateAge, isValidAge } from '../../lib/age';
+import Ionicons from '@expo/vector-icons/Ionicons';
+import DateTimePicker from '@react-native-community/datetimepicker';
 
 type StepProfileNavigationProp = NativeStackNavigationProp<RootStackParamList, 'OnboardingProfile'>;
 
@@ -23,6 +26,9 @@ export default function StepProfile() {
     bio: '',
     phone: '',
   });
+  const [birthdate, setBirthdate] = useState<Date | null>(null);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [confirmedOver18, setConfirmedOver18] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [banner, setBanner] = useState<{ type: 'info' | 'warning' | 'error' | 'success'; text: string } | null>(null);
 
@@ -35,20 +41,42 @@ export default function StepProfile() {
     }
   }, [gateLoading, hasSession, navigation]);
 
+  const handleDateChange = (event: any, selectedDate?: Date) => {
+    if (Platform.OS === 'android') {
+      setShowDatePicker(false);
+    }
+
+    if (selectedDate) {
+      setBirthdate(selectedDate);
+      const age = calculateAge(selectedDate.toISOString().split('T')[0]);
+      if (age !== null) {
+        setProfileData({ ...profileData, age: age.toString() });
+      }
+    }
+  };
+
   const handleContinue = async () => {
     if (!profileData.displayName.trim()) {
       Alert.alert('Error', 'Please enter your display name');
       return;
     }
 
-    if (!profileData.age.trim() || isNaN(Number(profileData.age))) {
-      Alert.alert('Error', 'Please enter a valid age');
+    if (!birthdate) {
+      Alert.alert('Error', 'Please select your date of birth');
       return;
     }
 
-    const age = Number(profileData.age);
-    if (age < 13 || age > 120) {
-      Alert.alert('Error', 'Age must be between 13 and 120');
+    const birthdateString = birthdate.toISOString().split('T')[0];
+    const age = calculateAge(birthdateString);
+
+    if (!isValidAge(age)) {
+      Alert.alert('Age Requirement Not Met', 'You must be at least 18 years old to use this service.');
+      navigation.navigate('OnboardingNotEligible' as never);
+      return;
+    }
+
+    if (!confirmedOver18) {
+      Alert.alert('Confirmation Required', 'Please confirm that you are 18 years or older');
       return;
     }
 
@@ -58,7 +86,8 @@ export default function StepProfile() {
     try {
       await persistence.saveProfile({
         displayName: profileData.displayName.trim(),
-        age: Number(profileData.age),
+        age: age!,
+        birthdate: birthdateString,
         bio: profileData.bio?.trim() || undefined,
       });
 
@@ -100,15 +129,43 @@ export default function StepProfile() {
           </View>
 
           <View className="mb-6">
-            <Text className="text-white/80 text-sm mb-2">Age *</Text>
-            <TextInput
-              className="bg-white/10 border border-white/20 rounded-2xl px-4 py-4 text-white text-base"
-              placeholder="Your age"
-              placeholderTextColor="rgba(255,255,255,0.4)"
-              value={profileData.age}
-              onChangeText={(text) => setProfileData({ ...profileData, age: text })}
-              keyboardType="number-pad"
-            />
+            <Text className="text-white/80 text-sm mb-2">Date of Birth *</Text>
+            <Pressable
+              onPress={() => setShowDatePicker(true)}
+              className="bg-white/10 border border-white/20 rounded-2xl px-4 py-4 flex-row items-center justify-between"
+            >
+              <Text className={birthdate ? "text-white text-base" : "text-white/40 text-base"}>
+                {birthdate
+                  ? birthdate.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+                  : 'Select your date of birth'}
+              </Text>
+              <Ionicons name="calendar-outline" size={20} color="rgba(255,255,255,0.6)" />
+            </Pressable>
+            {birthdate && profileData.age && (
+              <Text className="text-white/60 text-xs mt-1">Age: {profileData.age}</Text>
+            )}
+            {showDatePicker && (
+              <DateTimePicker
+                value={birthdate || new Date(2000, 0, 1)}
+                mode="date"
+                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                onChange={handleDateChange}
+                maximumDate={new Date()}
+                minimumDate={new Date(1900, 0, 1)}
+              />
+            )}
+          </View>
+
+          <View className="mb-6">
+            <Pressable
+              onPress={() => setConfirmedOver18(!confirmedOver18)}
+              className="flex-row items-center gap-3"
+            >
+              <View className={`w-6 h-6 rounded border-2 ${confirmedOver18 ? 'bg-blue-500 border-blue-500' : 'border-white/40'} items-center justify-center`}>
+                {confirmedOver18 && <Ionicons name="checkmark" size={16} color="#ffffff" />}
+              </View>
+              <Text className="text-white/80 text-base flex-1">I confirm that I am 18 years of age or older</Text>
+            </Pressable>
           </View>
 
           <View className="mb-6">

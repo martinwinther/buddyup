@@ -24,6 +24,7 @@ export class SupabaseOnboardingPersistence implements OnboardingPersistence {
       id: uid,
       display_name: profile.displayName ?? null,
       age: profile.age ?? null,
+      birthdate: profile.birthdate ?? null,
       bio: profile.bio ?? null,
       photo_url:
         profile.photoUri && profile.photoUri.startsWith('http') ? profile.photoUri : null,
@@ -83,7 +84,7 @@ export class SupabaseOnboardingPersistence implements OnboardingPersistence {
     const id = this.uidOrThrow();
     const { data, error } = await supabase
       .from('profiles')
-      .select('display_name, age, bio, photo_url')
+      .select('display_name, age, birthdate, bio, photo_url')
       .eq('id', id)
       .maybeSingle();
 
@@ -97,6 +98,7 @@ export class SupabaseOnboardingPersistence implements OnboardingPersistence {
     return {
       displayName: data.display_name ?? undefined,
       age: data.age ?? undefined,
+      birthdate: data.birthdate ?? undefined,
       bio: data.bio ?? undefined,
       photoUri: data.photo_url ?? null,
     };
@@ -133,14 +135,14 @@ export class SupabaseOnboardingPersistence implements OnboardingPersistence {
       const uid = s?.session?.user?.id;
       if (!uid) return false;
 
-      // Has profile with display_name?
+      // Has profile with display_name and birthdate?
       const { data: prof, error: pErr } = await supabase
         .from('profiles')
-        .select('id, display_name')
+        .select('id, display_name, birthdate')
         .eq('id', uid)
         .maybeSingle();
       if (pErr) return false;
-      const hasProfile = !!prof?.id && !!prof?.display_name;
+      const hasProfile = !!prof?.id && !!prof?.display_name && !!prof?.birthdate;
 
       // Has at least one category? (HEAD + count = exact is fast)
       const { count, error: cErr } = await supabase

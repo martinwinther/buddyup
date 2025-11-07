@@ -7,6 +7,8 @@ import { RootStackParamList } from '../types';
 import SplashScreen from '../components/SplashScreen';
 import { Routes } from './routes';
 import PresenceGate from '../features/presence/PresenceGate';
+import { supabase } from '../lib/supabase';
+import { meetsMinimumAge } from '../lib/age';
 
 import Home from '../screens/Home';
 import Discover from '../screens/Discover';
@@ -15,6 +17,7 @@ import SignInEmail from '../screens/Auth/SignInEmail';
 import StepProfile from '../screens/Onboarding/StepProfile';
 import StepCategories from '../screens/Onboarding/StepCategories';
 import Finish from '../screens/Onboarding/Finish';
+import NotEligible from '../screens/Onboarding/NotEligible';
 import Matches from '../screens/Messages/Matches';
 import Chat from '../screens/Messages/Chat';
 import Settings from '../screens/Settings/Settings';
@@ -45,6 +48,7 @@ function AppGate() {
   const persistence = useOnboardingPersistence();
   const [checking, setChecking] = useState<boolean>(true);
   const [completed, setCompleted] = useState<boolean | null>(null);
+  const [isEligible, setIsEligible] = useState<boolean>(true);
 
   useEffect(() => {
     let alive = true;
@@ -66,6 +70,25 @@ function AppGate() {
       setChecking(true);
       try {
         const done = await persistence.isCompleted();
+        
+        // Check age eligibility
+        if (done) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('birthdate')
+            .eq('id', session.user.id)
+            .maybeSingle();
+          
+          if (profile?.birthdate && !meetsMinimumAge(profile.birthdate)) {
+            if (alive) {
+              setIsEligible(false);
+              setCompleted(false);
+              setChecking(false);
+            }
+            return;
+          }
+        }
+        
         if (alive) {
           setCompleted(done);
           setChecking(false);
@@ -90,6 +113,11 @@ function AppGate() {
 
   if (!session) {
     return <AuthStackNavigator />;
+  }
+
+  // If not eligible, show NotEligible screen
+  if (!isEligible) {
+    return <OnboardingStackNavigator />;
   }
 
   // MAIN vs ONBOARDING — choose after check resolves
@@ -126,6 +154,7 @@ function OnboardingStackNavigator() {
       <OnboardingStack.Screen name={Routes.OnboardingProfile} component={StepProfile} />
       <OnboardingStack.Screen name={Routes.OnboardingCategories} component={StepCategories} />
       <OnboardingStack.Screen name={Routes.OnboardingFinish} component={Finish} />
+      <OnboardingStack.Screen name={Routes.OnboardingNotEligible} component={NotEligible} />
     </OnboardingStack.Navigator>
   );
 }
