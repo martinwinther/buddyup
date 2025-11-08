@@ -18,7 +18,7 @@ type StepProfileNavigationProp = NativeStackNavigationProp<RootStackParamList, '
 export default function StepProfile() {
   const navigation = useNavigation<StepProfileNavigationProp>();
   const persistence = useOnboardingPersistence();
-  const { user, session, isLoading } = useAuth();
+  const { user, session, isLoading, signOut } = useAuth();
   const { loading: gateLoading, hasSession } = useSessionGate();
   const [profileData, setProfileData] = useState<ProfileData>({
     displayName: '',
@@ -53,6 +53,14 @@ export default function StepProfile() {
         setProfileData({ ...profileData, age: age.toString() });
       }
     }
+  };
+
+  const handleSignIn = async () => {
+    await signOut();
+    navigation.reset({ 
+      index: 0, 
+      routes: [{ name: Routes.AuthSignIn as never }] 
+    });
   };
 
   const handleContinue = async () => {
@@ -223,7 +231,7 @@ export default function StepProfile() {
 
         <View className="flex-row justify-center mt-4">
           <Text className="text-white/60 text-sm">Already have an account? </Text>
-          <TouchableOpacity onPress={() => navigation.navigate(Routes.AuthSignIn as never)}>
+          <TouchableOpacity onPress={handleSignIn}>
             <Text className="text-blue-500 text-sm font-semibold">Sign In</Text>
           </TouchableOpacity>
         </View>

@@ -19,17 +19,46 @@ export default function PhotoGridManager({ maxPhotos = 6, className }: Props) {
 
   const userIdRef = React.useRef<string | null>(null);
   React.useEffect(() => {
-    (async () => {
+    let mounted = true;
+
+    const loadPhotos = async () => {
       const { data: s } = await supabase.auth.getSession();
       userIdRef.current = s?.session?.user?.id ?? null;
+      if (!mounted) return;
+      
       if (userIdRef.current) {
         const list = await repo.listByUser(userIdRef.current);
-        setItems(list.map(p => ({ id: p.id, url: p.url })));
+        if (mounted) {
+          setItems(list.map(p => ({ id: p.id, url: p.url })));
+        }
       } else {
         // No session - clear any photos
-        setItems([]);
+        if (mounted) {
+          setItems([]);
+        }
       }
-    })();
+    };
+
+    loadPhotos();
+
+    // Listen for auth state changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!mounted) return;
+      userIdRef.current = session?.user?.id ?? null;
+      
+      if (!session) {
+        // Session lost - clear photos immediately
+        setItems([]);
+      } else if (session?.user?.id) {
+        // New session - reload photos
+        loadPhotos();
+      }
+    });
+
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, [repo]);
 
   const addPhoto = async () => {
