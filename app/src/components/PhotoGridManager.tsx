@@ -25,6 +25,9 @@ export default function PhotoGridManager({ maxPhotos = 6, className }: Props) {
       if (userIdRef.current) {
         const list = await repo.listByUser(userIdRef.current);
         setItems(list.map(p => ({ id: p.id, url: p.url })));
+      } else {
+        // No session - clear any photos
+        setItems([]);
       }
     })();
   }, [repo]);

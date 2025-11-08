@@ -221,6 +221,13 @@ export default function StepProfile() {
           )}
         </TouchableOpacity>
 
+        <View className="flex-row justify-center mt-4">
+          <Text className="text-white/60 text-sm">Already have an account? </Text>
+          <TouchableOpacity onPress={() => navigation.navigate(Routes.AuthSignIn as never)}>
+            <Text className="text-blue-500 text-sm font-semibold">Sign In</Text>
+          </TouchableOpacity>
+        </View>
+
         {__DEV__ && session?.user?.id && (
           <View className="mt-4 bg-zinc-900/50 rounded-xl p-3 border border-white/10">
             <Text className="text-white/40 text-xs font-mono mb-1">DEV INFO</Text>
