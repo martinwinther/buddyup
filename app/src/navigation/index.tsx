@@ -30,6 +30,8 @@ import ReportUser from '../screens/Safety/ReportUser';
 import BlockedUsers from '../screens/Safety/BlockedUsers';
 import DiscoverySettings from '../screens/Discover/DiscoverySettings';
 import LikedYou from '../screens/Discover/LikedYou';
+import PrivacyScreen from '../screens/Legal/Privacy';
+import TermsScreen from '../screens/Legal/Terms';
 
 const AuthStack = createNativeStackNavigator<RootStackParamList>();
 const OnboardingStack = createNativeStackNavigator<RootStackParamList>();
@@ -181,6 +183,8 @@ function MainStackNavigator() {
       <MainStack.Screen name="BlockedUsers" component={BlockedUsers} options={{ headerShown: false }} />
       <MainStack.Screen name="DiscoverySettings" component={DiscoverySettings} options={{ headerShown: false }} />
       <MainStack.Screen name="LikedYou" component={LikedYou} options={{ headerShown: false }} />
+      <MainStack.Screen name="Privacy" component={PrivacyScreen} options={{ title: 'Privacy & Safety' }} />
+      <MainStack.Screen name="Terms" component={TermsScreen} options={{ title: 'Terms of Service' }} />
     </MainStack.Navigator>
   );
 }

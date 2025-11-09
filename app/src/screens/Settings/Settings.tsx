@@ -1,81 +1,49 @@
-import * as React from 'react';
-import { View, Text, Pressable, TextInput, Alert, Modal, ScrollView } from 'react-native';
-import Ionicons from '@expo/vector-icons/Ionicons';
+import { useEffect, useState } from 'react';
+import { View, Text, Switch, Alert, TouchableOpacity, ActivityIndicator, ScrollView, Modal, TextInput } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { Avatar } from '../../components/Avatar';
-import {
-  getEmail, loadDiscoveryPrefs, saveDiscoveryPrefs,
-  loadBlocked, unblock
-} from '../../features/settings/SettingsRepository';
+import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../lib/supabase';
-import { invokeFunctionJSON } from '../../lib/functions';
-
-function Row({ children }: { children: React.ReactNode }) {
-  return <View className="px-4 py-3 border-b border-white/5">{children}</View>;
-}
+import { loadMyProfile, updateNotifyEmail, invokeDeleteAccount } from '../../lib/account';
 
 export default function SettingsScreen() {
-  const navigation = useNavigation<any>();
-  const [email, setEmail] = React.useState<string | null>(null);
-  const [name, setName] = React.useState<string | null>(null);
-  const [photo, setPhoto] = React.useState<string | null>(null);
-  const [ageMin, setAgeMin] = React.useState(18);
-  const [ageMax, setAgeMax] = React.useState(99);
-  const [km, setKm] = React.useState(50);
-  const [onlyShared, setOnlyShared] = React.useState(true);
-  const [blocked, setBlocked] = React.useState<{ id: string; name: string; photo?: string | null }[]>([]);
-  const [busy, setBusy] = React.useState(false);
-  const [deleteModalOpen, setDeleteModalOpen] = React.useState(false);
-  const [deleteConfirmText, setDeleteConfirmText] = React.useState('');
+  const nav = useNavigation();
+  const [loading, setLoading] = useState(true);
+  const [notifyEmail, setNotifyEmail] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
 
-  React.useEffect(() => {
+  useEffect(() => {
+    let dead = false;
     (async () => {
-      const e = await getEmail();
-      setEmail(e);
-
-      const { data: u } = await supabase.auth.getUser();
-      const uid = u.user?.id;
-      if (uid) {
-        const { data: me } = await supabase
-          .from('profiles')
-          .select('display_name,photo_url')
-          .eq('id', uid)
-          .maybeSingle();
-        setName(me?.display_name ?? null);
-        setPhoto(me?.photo_url ?? null);
-      }
-
-      const prefs = await loadDiscoveryPrefs();
-      if (prefs) {
-        setAgeMin(prefs.age_min);
-        setAgeMax(prefs.age_max);
-        setKm(prefs.max_km);
-        setOnlyShared(prefs.only_shared_categories);
-      }
-
-      const bl = await loadBlocked();
-      setBlocked(bl.map(b => ({ id: b.blocked_id, name: b.display_name ?? 'User', photo: b.photo_url })));
+      try {
+        const me = await loadMyProfile();
+        if (!dead && me) setNotifyEmail(!!me.notify_email_messages);
+      } catch (_) {}
+      if (!dead) setLoading(false);
     })();
+    return () => { dead = true; };
   }, []);
 
-  const savePrefs = async () => {
-    setBusy(true);
+  const onToggleNotify = async (val: boolean) => {
+    setNotifyEmail(val);
+    setSaving(true);
     try {
-      await saveDiscoveryPrefs({
-        age_min: Math.min(ageMin, ageMax),
-        age_max: Math.max(ageMin, ageMax),
-        max_km: km,
-        only_shared_categories: onlyShared,
-      });
-      Alert.alert('Saved', 'Your discovery preferences have been updated.');
-    } catch (e: any) {
-      Alert.alert('Error', e?.message ?? 'Could not save preferences.');
+      await updateNotifyEmail(val);
+    } catch (e) {
+      Alert.alert('Error', 'Could not update preference. Please try again.');
+      setNotifyEmail(!val);
     } finally {
-      setBusy(false);
+      setSaving(false);
     }
   };
 
-  const confirmDelete = () => {
+  const onSignOut = async () => {
+    await supabase.auth.signOut();
+    // nav reset happens in your nav guard
+  };
+
+  const onDelete = () => {
     setDeleteModalOpen(true);
     setDeleteConfirmText('');
   };
@@ -85,155 +53,95 @@ export default function SettingsScreen() {
       Alert.alert('Invalid confirmation', 'You must type DELETE to confirm.');
       return;
     }
-    setBusy(true);
+    setSaving(true);
     setDeleteModalOpen(false);
     try {
-      await invokeFunctionJSON('delete-account', {});
+      await invokeDeleteAccount();
       await supabase.auth.signOut();
-    } catch (e: any) {
-      Alert.alert('Error', e?.message ?? 'Could not delete account.');
-      setBusy(false);
+    } catch (e) {
+      Alert.alert('Error', 'Failed to delete account. Please try again.');
+      setSaving(false);
     }
   };
 
+  if (loading) {
+    return (
+      <View className="flex-1 bg-black items-center justify-center">
+        <ActivityIndicator />
+        <Text className="text-zinc-300 mt-2">Loading…</Text>
+      </View>
+    );
+  }
+
   return (
-    <View className="flex-1 bg-[#0a0a0a]">
-      <View className="px-4 pt-4 pb-3 border-b border-white/5">
-        <View className="flex-row items-center justify-between">
-          <Text className="text-zinc-100 text-lg font-semibold">Settings</Text>
-          <Pressable onPress={() => navigation.goBack()} className="px-3 py-2 rounded-xl bg-white/10 border border-white/10">
-            <Ionicons name="close" size={18} color="#E5E7EB" />
-          </Pressable>
-        </View>
+    <View className="flex-1 bg-black">
+      <View className="px-4 py-5 border-b border-zinc-800">
+        <Text className="text-zinc-100 text-xl font-semibold">Settings</Text>
       </View>
 
-      <ScrollView className="flex-1">
-
-      {/* Account */}
-      <Row>
-        <View className="flex-row items-center gap-3">
-          <Avatar uri={photo ?? undefined} size={52} />
-          <View className="flex-1">
-            <Text className="text-zinc-100 font-semibold" numberOfLines={1}>{name ?? 'Your name'}</Text>
-            <Text className="text-zinc-400 text-sm" numberOfLines={1}>{email ?? ''}</Text>
-          </View>
-          <Pressable
-            onPress={() => navigation.navigate('EditProfile')}
-            className="px-3 py-2 rounded-xl bg-white/10 border border-white/10"
-            accessibilityLabel="Edit profile"
-          >
-            <Text className="text-zinc-200">Edit</Text>
-          </Pressable>
-        </View>
-      </Row>
-
-      {/* Discovery preferences */}
-      <Row>
-        <Text className="text-zinc-100 font-semibold mb-2">Discovery preferences</Text>
-        <Text className="text-zinc-300 mb-1">Age range</Text>
-        <View className="flex-row items-center gap-2 mb-2">
-          <TextInput
-            keyboardType="number-pad"
-            value={String(ageMin)}
-            onChangeText={(t) => setAgeMin(Math.max(18, Math.min(99, parseInt(t || '18', 10))))}
-            className="flex-1 bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-zinc-100"
-          />
-          <Text className="text-zinc-400">to</Text>
-          <TextInput
-            keyboardType="number-pad"
-            value={String(ageMax)}
-            onChangeText={(t) => setAgeMax(Math.max(18, Math.min(99, parseInt(t || '99', 10))))}
-            className="flex-1 bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-zinc-100"
-          />
-        </View>
-        <Text className="text-zinc-300 mb-1">Max distance (km)</Text>
-        <TextInput
-          keyboardType="number-pad"
-          value={String(km)}
-          onChangeText={(t) => setKm(Math.max(1, Math.min(500, parseInt(t || '50', 10))))}
-          className="bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-zinc-100 mb-2"
-        />
-        <Pressable
-          onPress={() => setOnlyShared(v => !v)}
-          className="flex-row items-center gap-2 mb-1"
-          accessibilityRole="checkbox"
-          accessibilityState={{ checked: onlyShared }}
-        >
-          <View className={`w-5 h-5 rounded-md border ${onlyShared ? 'bg-teal-500/80 border-teal-500/60' : 'bg-white/5 border-white/20'}`} />
-          <Text className="text-zinc-200">Only show people who share my categories</Text>
-        </Pressable>
-        <Pressable
-          onPress={savePrefs}
-          disabled={busy}
-          className={`mt-2 items-center py-3 rounded-xl ${busy ? 'bg-white/10' : 'bg-teal-500/90'}`}
-          accessibilityLabel="Save preferences"
-        >
-          <Text className={busy ? 'text-zinc-500' : 'text-zinc-900 font-semibold'}>{busy ? 'Saving…' : 'Save'}</Text>
-        </Pressable>
-      </Row>
-
-      {/* Blocked users */}
-      <Row>
-        <Text className="text-zinc-100 font-semibold mb-2">Blocked users</Text>
-        {blocked.length === 0 ? (
-          <Text className="text-zinc-400">You haven't blocked anyone.</Text>
-        ) : blocked.map(b => (
-          <View key={b.id} className="flex-row items-center justify-between py-2">
-            <View className="flex-row items-center gap-3">
-              <Avatar uri={b.photo ?? undefined} size={36} />
-              <Text className="text-zinc-100">{b.name}</Text>
+      <ScrollView>
+        {/* Notifications */}
+        <View className="px-4 py-4 gap-3">
+          <Text className="text-zinc-400 text-xs uppercase">Notifications</Text>
+          <View className="flex-row items-center justify-between bg-zinc-900 rounded-2xl px-4 py-3">
+            <View className="flex-1">
+              <Text className="text-zinc-100">Email me when I get a new message</Text>
+              <Text className="text-zinc-400 text-xs">You can turn this off anytime</Text>
             </View>
-            <Pressable
-              onPress={async () => {
-                try {
-                  await unblock(b.id);
-                  setBlocked(x => x.filter(y => y.id !== b.id));
-                } catch (e: any) {
-                  Alert.alert('Error', e?.message ?? 'Could not unblock user.');
-                }
-              }}
-              className="px-3 py-2 rounded-xl bg-white/10 border border-white/10"
-              accessibilityLabel={`Unblock ${b.name}`}
-            >
-              <Text className="text-zinc-200">Unblock</Text>
-            </Pressable>
+            <Switch
+              value={notifyEmail}
+              onValueChange={onToggleNotify}
+              disabled={saving}
+            />
           </View>
-        ))}
-      </Row>
+        </View>
 
-      {/* Danger zone */}
-      <Row>
-        <Text className="text-zinc-100 font-semibold mb-2">Danger zone</Text>
-        <Pressable
-          onPress={confirmDelete}
-          className="mb-2 px-4 py-3 rounded-xl bg-red-500/15 border border-red-500/30"
-          accessibilityLabel="Delete account"
-        >
-          <View className="flex-row items-center gap-2">
-            <Ionicons name="trash-outline" size={18} color="#fca5a5" />
-            <Text className="text-red-300 font-semibold">Delete account</Text>
-          </View>
-        </Pressable>
-        <Pressable
-          onPress={async () => {
-            await supabase.auth.signOut();
-          }}
-          className="px-4 py-3 rounded-xl bg-white/10 border border-white/10"
-          accessibilityLabel="Sign out"
-        >
-          <View className="flex-row items-center gap-2">
-            <Ionicons name="log-out-outline" size={18} color="#E5E7EB" />
-            <Text className="text-zinc-200">Sign out</Text>
-          </View>
-        </Pressable>
-      </Row>
+        {/* Legal */}
+        <View className="px-4 py-4 gap-3">
+          <Text className="text-zinc-400 text-xs uppercase">Legal</Text>
+          <TouchableOpacity 
+            className="flex-row items-center justify-between bg-zinc-900 rounded-2xl px-4 py-3"
+            onPress={() => nav.navigate('Privacy' as never)}
+          >
+            <Text className="text-zinc-100">Privacy & Safety</Text>
+            <Ionicons name="chevron-forward" size={18} color="#a1a1aa" />
+          </TouchableOpacity>
+          <TouchableOpacity 
+            className="flex-row items-center justify-between bg-zinc-900 rounded-2xl px-4 py-3"
+            onPress={() => nav.navigate('Terms' as never)}
+          >
+            <Text className="text-zinc-100">Terms of Service</Text>
+            <Ionicons name="chevron-forward" size={18} color="#a1a1aa" />
+          </TouchableOpacity>
+        </View>
+
+        {/* Account */}
+        <View className="px-4 py-4 gap-3">
+          <Text className="text-zinc-400 text-xs uppercase">Account</Text>
+          <TouchableOpacity 
+            className="bg-zinc-900 rounded-2xl px-4 py-3" 
+            onPress={onSignOut} 
+            disabled={saving}
+          >
+            <Text className="text-zinc-100 text-center">Sign out</Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            className="bg-red-600/10 border border-red-600/30 rounded-2xl px-4 py-3"
+            onPress={onDelete} 
+            disabled={saving}
+          >
+            <Text className="text-red-400 text-center">Delete account</Text>
+          </TouchableOpacity>
+        </View>
       </ScrollView>
 
       <Modal visible={deleteModalOpen} transparent animationType="fade" onRequestClose={() => setDeleteModalOpen(false)}>
         <View className="flex-1 items-center justify-center bg-black/60 px-6">
           <View className="w-full rounded-2xl bg-[#111] border border-white/10 p-4">
             <Text className="text-zinc-100 text-lg mb-2 font-semibold">Delete account?</Text>
-            <Text className="text-zinc-400 mb-4">This will permanently remove your profile, photos, messages, likes, and preferences.</Text>
+            <Text className="text-zinc-400 mb-4">
+              This will permanently remove your profile, photos, messages, likes, and preferences.
+            </Text>
             <Text className="text-zinc-300 mb-2 text-sm">Type DELETE to confirm:</Text>
             <TextInput
               value={deleteConfirmText}
@@ -244,12 +152,19 @@ export default function SettingsScreen() {
               autoCapitalize="characters"
             />
             <View className="flex-row justify-end gap-2">
-              <Pressable onPress={() => setDeleteModalOpen(false)} className="px-4 py-2 rounded-xl bg-white/10 border border-white/10">
+              <TouchableOpacity 
+                onPress={() => setDeleteModalOpen(false)} 
+                className="px-4 py-2 rounded-xl bg-white/10 border border-white/10"
+              >
                 <Text className="text-zinc-100">Cancel</Text>
-              </Pressable>
-              <Pressable onPress={executeDelete} disabled={busy} className="px-4 py-2 rounded-xl bg-red-500/90">
-                <Text className="text-zinc-900 font-semibold">{busy ? 'Deleting…' : 'Delete'}</Text>
-              </Pressable>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                onPress={executeDelete} 
+                disabled={saving} 
+                className="px-4 py-2 rounded-xl bg-red-500/90"
+              >
+                <Text className="text-zinc-900 font-semibold">{saving ? 'Deleting…' : 'Delete'}</Text>
+              </TouchableOpacity>
             </View>
           </View>
         </View>

@@ -42,5 +42,7 @@ export type RootStackParamList = {
   BlockedUsers: undefined;
   DiscoverySettings: undefined;
   LikedYou: undefined;
+  Privacy: undefined;
+  Terms: undefined;
 };
 

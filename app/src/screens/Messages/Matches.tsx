@@ -177,6 +177,9 @@ export default function Matches() {
             <Pressable onPress={onRefresh} className="px-3 py-2 rounded-xl bg-white/10 border border-white/10" accessibilityLabel="Refresh chats">
               <Ionicons name="refresh" size={18} color="#E5E7EB" />
             </Pressable>
+            <Pressable onPress={() => nav.navigate('Settings')} className="px-3 py-2 rounded-xl bg-white/10 border border-white/10" accessibilityLabel="Settings">
+              <Ionicons name="settings-outline" size={18} color="#E5E7EB" />
+            </Pressable>
           </View>
         </View>
 
