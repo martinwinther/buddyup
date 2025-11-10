@@ -171,7 +171,7 @@ const SwipeDeck = forwardRef<SwipeDeckRef, Props>(({ candidates, onSwipe, onPres
 
   return (
     <View className="flex-1 items-center justify-center">
-      <View style={{ width: cardWidth, height: cardHeight, position: 'relative' }}>
+      <View style={{ width: cardWidth, height: cardHeight, position: 'relative', overflow: 'visible' }}>
         {Card(displayThird, thirdStyle)}
         {Card(displayNext, nextStyle)}
 
