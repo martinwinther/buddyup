@@ -1,5 +1,5 @@
-import React, { useMemo, forwardRef, useImperativeHandle } from 'react';
-import { View, Dimensions, Text } from 'react-native';
+import React, { useMemo, forwardRef, useImperativeHandle, useEffect } from 'react';
+import { View, Dimensions, Text, useWindowDimensions } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   useSharedValue, useAnimatedStyle, withSpring, withTiming, runOnJS, interpolate, Extrapolate
@@ -7,8 +7,6 @@ import Animated, {
 import FullProfileCard from './FullProfileCard';
 import type { Candidate } from './SupabaseDiscoverRepository';
 
-const { width } = Dimensions.get('window');
-const SWIPE_OUT = Math.min(120, width * 0.28);
 const ROT = 12;
 
 export type SwipeDeckRef = { swipeLeft: () => void; swipeRight: () => void; };
@@ -20,6 +18,9 @@ type Props = {
 };
 
 const SwipeDeck = forwardRef<SwipeDeckRef, Props>(({ candidates, onSwipe, onPress }, ref) => {
+  const { width } = useWindowDimensions();
+  const SWIPE_OUT = Math.min(120, width * 0.28);
+  
   const [swipingCard, setSwipingCard] = React.useState<Candidate | null>(null);
   const [frozenNext, setFrozenNext] = React.useState<Candidate | null>(null);
   const [frozenThird, setFrozenThird] = React.useState<Candidate | null>(null);
@@ -91,7 +92,7 @@ const SwipeDeck = forwardRef<SwipeDeckRef, Props>(({ candidates, onSwipe, onPres
             dragging.value = false;
           }
         }),
-    [top?.id, isAnimating]
+    [top?.id, isAnimating, width, SWIPE_OUT]
   );
 
   const tap = useMemo(
