@@ -196,7 +196,7 @@ export default function Discover() {
   ];
 
   return (
-    <View className="flex-1 bg-[#0a0a0a] overflow-hidden">
+    <View className="flex-1 bg-[#0a0a0a]">
       <AppHeader onOpenMenu={() => setHeaderMenuOpen(true)} />
 
       {/* Card overflow menu */}
@@ -238,30 +238,32 @@ export default function Discover() {
         </>
       )}
 
-      <View className="flex-1 items-center justify-center">
-        {pager.loading && cards.length === 0 ? (
-          <CardSkeleton />
-        ) : cards.length === 0 ? (
-          <View className="items-center gap-3">
-            <Text className="text-zinc-200 text-base">You're all caught up</Text>
-            <View className="flex-row gap-2 mt-1">
-              <Pressable
-                onPress={pager.refresh}
-                className="px-3 py-2 rounded-xl bg-white/10 border border-white/10"
-              >
-                <Text className="text-zinc-100">Reload</Text>
-              </Pressable>
-              <Pressable
-                onPress={() => nav.navigate('DiscoverySettings')}
-                className="px-3 py-2 rounded-xl bg-white/10 border border-white/10"
-              >
-                <Text className="text-zinc-100">Edit preferences</Text>
-              </Pressable>
+      <View className="flex-1" style={{ overflow: 'hidden' }}>
+        <View className="flex-1 items-center justify-center">
+          {pager.loading && cards.length === 0 ? (
+            <CardSkeleton />
+          ) : cards.length === 0 ? (
+            <View className="items-center gap-3">
+              <Text className="text-zinc-200 text-base">You're all caught up</Text>
+              <View className="flex-row gap-2 mt-1">
+                <Pressable
+                  onPress={pager.refresh}
+                  className="px-3 py-2 rounded-xl bg-white/10 border border-white/10"
+                >
+                  <Text className="text-zinc-100">Reload</Text>
+                </Pressable>
+                <Pressable
+                  onPress={() => nav.navigate('DiscoverySettings')}
+                  className="px-3 py-2 rounded-xl bg-white/10 border border-white/10"
+                >
+                  <Text className="text-zinc-100">Edit preferences</Text>
+                </Pressable>
+              </View>
             </View>
-          </View>
-        ) : (
-          <SwipeDeck ref={deckRef} candidates={cards} onSwipe={handleSwipe} onPress={openProfile} />
-        )}
+          ) : (
+            <SwipeDeck ref={deckRef} candidates={cards} onSwipe={handleSwipe} onPress={openProfile} />
+          )}
+        </View>
       </View>
 
       <ActionBar
