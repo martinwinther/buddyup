@@ -238,7 +238,7 @@ export default function Discover() {
         </>
       )}
 
-      <View className="flex-1 items-center justify-center overflow-hidden">
+      <View className="flex-1 items-center justify-center">
         {pager.loading && cards.length === 0 ? (
           <CardSkeleton />
         ) : cards.length === 0 ? (
