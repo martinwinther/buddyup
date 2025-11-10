@@ -34,7 +34,8 @@ export default function InlineToast({ message, visible, onHide, duration = 1600,
     transform: [{ translateY: translateY.value }],
   }));
 
-  const top = position === 'top';
+  const isTopPosition = position === 'top';
+  const topOffset = isTopPosition ? (Platform.OS === 'web' ? 72 : 64) : undefined;
 
   return (
     <Animated.View
@@ -42,8 +43,8 @@ export default function InlineToast({ message, visible, onHide, duration = 1600,
       style={[style, {
         position: 'absolute',
         left: 0, right: 0,
-        top: top ? (Platform.OS === 'web' ? 16 : 12) : undefined,
-        bottom: !top ? 24 : undefined,
+        top: topOffset,
+        bottom: !isTopPosition ? 24 : undefined,
         alignItems: 'center',
       }]}
     >

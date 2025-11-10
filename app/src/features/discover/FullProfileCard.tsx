@@ -110,15 +110,15 @@ export default function FullProfileCard({
 
       {/* Bottom gradient for readability */}
       <LinearGradient
-        colors={['rgba(0,0,0,0.0)', 'rgba(0,0,0,0.55)', 'rgba(0,0,0,0.75)']}
-        locations={[0.4, 0.75, 1]}
-        style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: 180 }}
+        colors={['rgba(0,0,0,0.0)', 'rgba(0,0,0,0.6)', 'rgba(0,0,0,0.8)']}
+        locations={[0.35, 0.7, 1]}
+        style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: 200 }}
         pointerEvents="none"
       />
 
       {/* Always-visible info overlay */}
       <View
-        className="absolute left-0 right-0 bottom-0 px-4 pb-4"
+        className="absolute left-0 right-0 bottom-0 px-5 pb-5"
         pointerEvents="box-none"
       >
         {/* Name line */}
@@ -127,34 +127,34 @@ export default function FullProfileCard({
         </Text>
 
         {/* Meta row: distance, last active, shared */}
-        <View className="mt-1 flex-row items-center gap-3 flex-wrap">
+        <View className="mt-1 flex-row items-center gap-2.5 flex-wrap">
           {typeof distanceKm === 'number' && (
             <View className="flex-row items-center">
-              <Ionicons name="location-outline" size={14} color="#cbd5e1" />
-              <Text className="text-zinc-300 text-xs ml-1">
+              <Ionicons name="location-outline" size={13} color="#cbd5e1" />
+              <Text className="text-zinc-300 text-xs ml-0.5">
                 {distanceKm < 1 ? '<1 km' : `~${distanceKm.toFixed(1)} km`}
               </Text>
             </View>
           )}
           {!!lastActiveLabel && (
             <View className="flex-row items-center">
-              <Ionicons name="time-outline" size={14} color="#cbd5e1" />
-              <Text className="text-zinc-300 text-xs ml-1">{lastActiveLabel}</Text>
+              <Ionicons name="time-outline" size={13} color="#cbd5e1" />
+              <Text className="text-zinc-300 text-xs ml-0.5">{lastActiveLabel}</Text>
             </View>
           )}
           {sharedCount > 0 && (
             <View className="flex-row items-center">
-              <Ionicons name="sparkles-outline" size={14} color="#cbd5e1" />
-              <Text className="text-zinc-300 text-xs ml-1">{sharedCount} shared</Text>
+              <Ionicons name="sparkles-outline" size={13} color="#cbd5e1" />
+              <Text className="text-zinc-300 text-xs ml-0.5">{sharedCount} shared</Text>
             </View>
           )}
         </View>
 
-        {/* Bio (3 line clamp) */}
+        {/* Bio (2 line clamp for better fit) */}
         {bio ? (
           <Text
-            numberOfLines={3}
-            className="mt-2 text-zinc-200 text-sm leading-5"
+            numberOfLines={2}
+            className="mt-1.5 text-zinc-200 text-sm leading-5"
           >
             {bio}
           </Text>
@@ -162,17 +162,18 @@ export default function FullProfileCard({
 
         {/* Category pills (first 6) */}
         {categories.length > 0 && (
-          <View className="mt-2 flex-row flex-wrap gap-2">
+          <View className="mt-2 flex-row flex-wrap gap-1.5">
             {categories.slice(0, 6).map((c) => (
               <View
                 key={c.id}
-                className={`px-2 py-1 rounded-full ${
+                className={`px-2.5 py-1 rounded-full ${
                   c.shared
                     ? 'bg-emerald-600/20 border border-emerald-500/50'
                     : 'bg-zinc-800/70 border border-zinc-700/60'
                 }`}
               >
                 <Text
+                  numberOfLines={1}
                   className={`${
                     c.shared ? 'text-emerald-300' : 'text-zinc-200'
                   } text-xs`}
