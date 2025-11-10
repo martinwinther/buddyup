@@ -196,7 +196,7 @@ export default function Discover() {
   ];
 
   return (
-    <View className="flex-1 bg-[#0a0a0a]">
+    <View className="flex-1 bg-[#0a0a0a] overflow-hidden">
       <AppHeader onOpenMenu={() => setHeaderMenuOpen(true)} />
 
       {/* Card overflow menu */}
@@ -238,7 +238,7 @@ export default function Discover() {
         </>
       )}
 
-      <View className="flex-1 items-center justify-center">
+      <View className="flex-1 items-center justify-center overflow-hidden">
         {pager.loading && cards.length === 0 ? (
           <CardSkeleton />
         ) : cards.length === 0 ? (

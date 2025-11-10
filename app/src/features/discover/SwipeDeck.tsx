@@ -52,14 +52,15 @@ const SwipeDeck = forwardRef<SwipeDeckRef, Props>(({ candidates, onSwipe, onPres
   // Clear frozen states when the candidates array actually changes
   React.useEffect(() => {
     if (swipingCard && swipingCard.id !== top?.id) {
-      // First clear frozen states to prevent showing old card
-      setSwipingCard(null);
-      setFrozenNext(null);
-      setFrozenThird(null);
-      setIsAnimating(false);
-      
-      // Animate position back to center smoothly - the fade covers the transition
-      x.value = withTiming(0, { duration: 150 });
+      // Animate position back to center first, then clear frozen states after animation
+      x.value = withTiming(0, { duration: 150 }, (finished) => {
+        if (finished) {
+          runOnJS(setSwipingCard)(null);
+          runOnJS(setFrozenNext)(null);
+          runOnJS(setFrozenThird)(null);
+          runOnJS(setIsAnimating)(false);
+        }
+      });
       y.value = withTiming(0, { duration: 150 });
       rot.value = withTiming(0, { duration: 150 });
       dragging.value = false;
@@ -169,7 +170,7 @@ const SwipeDeck = forwardRef<SwipeDeckRef, Props>(({ candidates, onSwipe, onPres
   const cardHeight = Math.min(cardWidth * 1.2, 650);
 
   return (
-    <View className="flex-1 items-center justify-center">
+    <View className="flex-1 items-center justify-center" style={{ overflow: 'hidden' }}>
       <View style={{ width: cardWidth, height: cardHeight }}>
         {Card(displayThird, thirdStyle)}
         {Card(displayNext, nextStyle)}
