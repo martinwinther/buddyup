@@ -42,6 +42,7 @@
   "devDependencies": {
     "@faker-js/faker": "^10.1.0",
     "@types/react": "~19.1.0",
+    "@types/react-native": "^0.72.8",
     "autoprefixer": "^10.4.21",
     "babel-preset-expo": "^54.0.4",
     "dotenv": "^17.2.3",

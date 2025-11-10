@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView, Alert, ActivityIndicator, Pressable, Platform } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, Alert, ActivityIndicator, Pressable, Platform, Modal } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { ProfileData, RootStackParamList } from '../../types';
@@ -27,6 +27,7 @@ export default function StepProfile() {
     phone: '',
   });
   const [birthdate, setBirthdate] = useState<Date | null>(null);
+  const [tempBirthdate, setTempBirthdate] = useState<Date | null>(null);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [confirmedOver18, setConfirmedOver18] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -44,15 +45,35 @@ export default function StepProfile() {
   const handleDateChange = (event: any, selectedDate?: Date) => {
     if (Platform.OS === 'android') {
       setShowDatePicker(false);
+      if (selectedDate) {
+        setBirthdate(selectedDate);
+        const age = calculateAge(selectedDate.toISOString().split('T')[0]);
+        if (age !== null) {
+          setProfileData({ ...profileData, age: age.toString() });
+        }
+      }
+    } else {
+      // iOS: update temp date as user scrolls
+      if (selectedDate) {
+        setTempBirthdate(selectedDate);
+      }
     }
+  };
 
-    if (selectedDate) {
-      setBirthdate(selectedDate);
-      const age = calculateAge(selectedDate.toISOString().split('T')[0]);
+  const confirmDateSelection = () => {
+    if (tempBirthdate) {
+      setBirthdate(tempBirthdate);
+      const age = calculateAge(tempBirthdate.toISOString().split('T')[0]);
       if (age !== null) {
         setProfileData({ ...profileData, age: age.toString() });
       }
     }
+    setShowDatePicker(false);
+  };
+
+  const openDatePicker = () => {
+    setTempBirthdate(birthdate || new Date(2000, 0, 1));
+    setShowDatePicker(true);
   };
 
   const handleSignIn = async () => {
@@ -138,29 +159,21 @@ export default function StepProfile() {
 
           <View className="mb-6">
             <Text className="text-white/80 text-sm mb-2">Date of Birth *</Text>
-            <Pressable
-              onPress={() => setShowDatePicker(true)}
-              className="bg-white/10 border border-white/20 rounded-2xl px-4 py-4 flex-row items-center justify-between"
+            <TouchableOpacity
+              onPress={openDatePicker}
+              activeOpacity={0.7}
             >
-              <Text className={birthdate ? "text-white text-base" : "text-white/40 text-base"}>
-                {birthdate
-                  ? birthdate.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
-                  : 'Select your date of birth'}
-              </Text>
-              <Ionicons name="calendar-outline" size={20} color="rgba(255,255,255,0.6)" />
-            </Pressable>
+              <View className="bg-white/10 border border-white/20 rounded-2xl px-4 py-4 flex-row items-center justify-between">
+                <Text className={birthdate ? "text-white text-base" : "text-white/40 text-base"}>
+                  {birthdate
+                    ? birthdate.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+                    : 'Select your date of birth'}
+                </Text>
+                <Ionicons name="calendar-outline" size={20} color="rgba(255,255,255,0.6)" />
+              </View>
+            </TouchableOpacity>
             {birthdate && profileData.age && (
               <Text className="text-white/60 text-xs mt-1">Age: {profileData.age}</Text>
-            )}
-            {showDatePicker && (
-              <DateTimePicker
-                value={birthdate || new Date(2000, 0, 1)}
-                mode="date"
-                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                onChange={handleDateChange}
-                maximumDate={new Date()}
-                minimumDate={new Date(1900, 0, 1)}
-              />
             )}
           </View>
 
@@ -248,6 +261,107 @@ export default function StepProfile() {
           </View>
         )}
       </View>
+
+      {/* iOS Date Picker Modal */}
+      {Platform.OS === 'ios' && (
+        <Modal
+          visible={showDatePicker}
+          transparent
+          animationType="slide"
+        >
+          <View className="flex-1 justify-end bg-black/50">
+            <Pressable 
+              className="flex-1" 
+              onPress={() => setShowDatePicker(false)}
+            />
+            <View className="bg-zinc-900 rounded-t-3xl">
+              <View className="flex-row justify-between items-center px-6 py-4 border-b border-white/10">
+                <TouchableOpacity onPress={() => setShowDatePicker(false)}>
+                  <Text className="text-blue-500 text-base">Cancel</Text>
+                </TouchableOpacity>
+                <Text className="text-white text-base font-semibold">Select Birthday</Text>
+                <TouchableOpacity onPress={confirmDateSelection}>
+                  <Text className="text-blue-500 text-base font-semibold">Done</Text>
+                </TouchableOpacity>
+              </View>
+              <DateTimePicker
+                value={tempBirthdate || new Date(2000, 0, 1)}
+                mode="date"
+                display="spinner"
+                onChange={handleDateChange}
+                maximumDate={new Date()}
+                minimumDate={new Date(1900, 0, 1)}
+                textColor="#ffffff"
+              />
+            </View>
+          </View>
+        </Modal>
+      )}
+
+      {/* Android Date Picker */}
+      {Platform.OS === 'android' && showDatePicker && (
+        <DateTimePicker
+          value={birthdate || new Date(2000, 0, 1)}
+          mode="date"
+          display="default"
+          onChange={handleDateChange}
+          maximumDate={new Date()}
+          minimumDate={new Date(1900, 0, 1)}
+        />
+      )}
+
+      {/* Web Date Picker Modal */}
+      {Platform.OS === 'web' && (
+        <Modal
+          visible={showDatePicker}
+          transparent
+          animationType="fade"
+        >
+          <View className="flex-1 justify-center items-center bg-black/70 px-6">
+            <View className="bg-zinc-900 rounded-3xl p-6 w-full max-w-md border border-white/20">
+              <Text className="text-white text-xl font-semibold mb-4">Select Birthday</Text>
+              
+              <input
+                type="date"
+                value={tempBirthdate ? tempBirthdate.toISOString().split('T')[0] : '2000-01-01'}
+                onChange={(e) => {
+                  const newDate = new Date(e.target.value);
+                  if (!isNaN(newDate.getTime())) {
+                    setTempBirthdate(newDate);
+                  }
+                }}
+                max={new Date().toISOString().split('T')[0]}
+                min="1900-01-01"
+                style={{
+                  width: '100%',
+                  padding: '12px',
+                  fontSize: '16px',
+                  borderRadius: '12px',
+                  border: '1px solid rgba(255,255,255,0.2)',
+                  backgroundColor: 'rgba(255,255,255,0.1)',
+                  color: '#ffffff',
+                  marginBottom: '16px',
+                }}
+              />
+              
+              <View className="flex-row gap-3">
+                <TouchableOpacity
+                  onPress={() => setShowDatePicker(false)}
+                  className="flex-1 bg-white/10 rounded-2xl py-3"
+                >
+                  <Text className="text-white text-center text-base">Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={confirmDateSelection}
+                  className="flex-1 bg-blue-500 rounded-2xl py-3"
+                >
+                  <Text className="text-white text-center text-base font-semibold">Done</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
+      )}
     </ScrollView>
   );
 }
