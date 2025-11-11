@@ -104,7 +104,10 @@ const SwipeDeck = forwardRef<SwipeDeckRef, Props>(({ candidates, onSwipe, onPres
 
   const composed = useMemo(() => Gesture.Simultaneous(pan, tap), [pan, tap]);
 
-  const cardWidth = Math.min(width * 0.9, 540);
+  // On desktop, respect ResponsiveContainer's 400px limit
+  // On mobile, use 90% of screen width
+  const maxCardWidth = width >= 768 ? 380 : Math.min(width * 0.9, 540);
+  const cardWidth = Math.min(width * 0.9, maxCardWidth);
   const cardHeight = Math.min(cardWidth * 1.2, 650);
 
   const topStyle = useAnimatedStyle(() => {
@@ -126,6 +129,8 @@ const SwipeDeck = forwardRef<SwipeDeckRef, Props>(({ candidates, onSwipe, onPres
       position: 'absolute',
       width: cardWidth,
       height: cardHeight,
+      maxWidth: maxCardWidth,
+      maxHeight: 650,
       overflow: 'hidden',
       transform: [{ translateX: x.value }, { translateY: y.value }, { rotateZ: `${rot.value}deg` }],
       opacity,
@@ -135,10 +140,10 @@ const SwipeDeck = forwardRef<SwipeDeckRef, Props>(({ candidates, onSwipe, onPres
   const nextStyle = useAnimatedStyle(() => {
     const scale = interpolate(Math.abs(x.value), [0, SWIPE_OUT], [1, 0.98], Extrapolate.CLAMP);
     const ty = interpolate(Math.abs(x.value), [0, SWIPE_OUT], [0, -6], Extrapolate.CLAMP);
-    return { position: 'absolute', width: cardWidth, height: cardHeight, overflow: 'hidden', transform: [{ scale }, { translateY: ty }], opacity: 0.98 };
+    return { position: 'absolute', width: cardWidth, height: cardHeight, maxWidth: maxCardWidth, maxHeight: 650, overflow: 'hidden', transform: [{ scale }, { translateY: ty }], opacity: 0.98 };
   });
 
-  const thirdStyle = useAnimatedStyle(() => ({ position: 'absolute', width: cardWidth, height: cardHeight, overflow: 'hidden', transform: [{ scale: 0.96 }], opacity: 0.9 }));
+  const thirdStyle = useAnimatedStyle(() => ({ position: 'absolute', width: cardWidth, height: cardHeight, maxWidth: maxCardWidth, maxHeight: 650, overflow: 'hidden', transform: [{ scale: 0.96 }], opacity: 0.9 }));
 
   const likeStyle = useAnimatedStyle(() => ({
     opacity: interpolate(x.value, [20, 80], [0, 1], Extrapolate.CLAMP),
