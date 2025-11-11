@@ -126,6 +126,7 @@ const SwipeDeck = forwardRef<SwipeDeckRef, Props>(({ candidates, onSwipe, onPres
       position: 'absolute',
       width: cardWidth,
       height: cardHeight,
+      overflow: 'hidden',
       transform: [{ translateX: x.value }, { translateY: y.value }, { rotateZ: `${rot.value}deg` }],
       opacity,
     };
@@ -134,10 +135,10 @@ const SwipeDeck = forwardRef<SwipeDeckRef, Props>(({ candidates, onSwipe, onPres
   const nextStyle = useAnimatedStyle(() => {
     const scale = interpolate(Math.abs(x.value), [0, SWIPE_OUT], [1, 0.98], Extrapolate.CLAMP);
     const ty = interpolate(Math.abs(x.value), [0, SWIPE_OUT], [0, -6], Extrapolate.CLAMP);
-    return { position: 'absolute', width: cardWidth, height: cardHeight, transform: [{ scale }, { translateY: ty }], opacity: 0.98 };
+    return { position: 'absolute', width: cardWidth, height: cardHeight, overflow: 'hidden', transform: [{ scale }, { translateY: ty }], opacity: 0.98 };
   });
 
-  const thirdStyle = useAnimatedStyle(() => ({ position: 'absolute', width: cardWidth, height: cardHeight, transform: [{ scale: 0.96 }], opacity: 0.9 }));
+  const thirdStyle = useAnimatedStyle(() => ({ position: 'absolute', width: cardWidth, height: cardHeight, overflow: 'hidden', transform: [{ scale: 0.96 }], opacity: 0.9 }));
 
   const likeStyle = useAnimatedStyle(() => ({
     opacity: interpolate(x.value, [20, 80], [0, 1], Extrapolate.CLAMP),
@@ -174,7 +175,7 @@ const SwipeDeck = forwardRef<SwipeDeckRef, Props>(({ candidates, onSwipe, onPres
 
   return (
     <View className="flex-1 items-center justify-center">
-      <View style={{ width: cardWidth, height: cardHeight, position: 'relative', overflow: 'visible' }}>
+      <View style={{ width: cardWidth, height: cardHeight, position: 'relative', overflow: 'hidden' }}>
         {Card(displayThird, thirdStyle)}
         {Card(displayNext, nextStyle)}
 
