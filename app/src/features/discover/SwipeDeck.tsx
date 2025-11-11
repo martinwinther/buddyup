@@ -104,6 +104,9 @@ const SwipeDeck = forwardRef<SwipeDeckRef, Props>(({ candidates, onSwipe, onPres
 
   const composed = useMemo(() => Gesture.Simultaneous(pan, tap), [pan, tap]);
 
+  const cardWidth = Math.min(width * 0.9, 540);
+  const cardHeight = Math.min(cardWidth * 1.2, 650);
+
   const topStyle = useAnimatedStyle(() => {
     // Fade out when off-screen, fade in smoothly when at center
     const absX = Math.abs(x.value);
@@ -121,8 +124,8 @@ const SwipeDeck = forwardRef<SwipeDeckRef, Props>(({ candidates, onSwipe, onPres
     
     return {
       position: 'absolute',
-      width: '100%',
-      height: '100%',
+      width: cardWidth,
+      height: cardHeight,
       transform: [{ translateX: x.value }, { translateY: y.value }, { rotateZ: `${rot.value}deg` }],
       opacity,
     };
@@ -131,10 +134,10 @@ const SwipeDeck = forwardRef<SwipeDeckRef, Props>(({ candidates, onSwipe, onPres
   const nextStyle = useAnimatedStyle(() => {
     const scale = interpolate(Math.abs(x.value), [0, SWIPE_OUT], [1, 0.98], Extrapolate.CLAMP);
     const ty = interpolate(Math.abs(x.value), [0, SWIPE_OUT], [0, -6], Extrapolate.CLAMP);
-    return { position: 'absolute', width: '100%', height: '100%', transform: [{ scale }, { translateY: ty }], opacity: 0.98 };
+    return { position: 'absolute', width: cardWidth, height: cardHeight, transform: [{ scale }, { translateY: ty }], opacity: 0.98 };
   });
 
-  const thirdStyle = useAnimatedStyle(() => ({ position: 'absolute', width: '100%', height: '100%', transform: [{ scale: 0.96 }], opacity: 0.9 }));
+  const thirdStyle = useAnimatedStyle(() => ({ position: 'absolute', width: cardWidth, height: cardHeight, transform: [{ scale: 0.96 }], opacity: 0.9 }));
 
   const likeStyle = useAnimatedStyle(() => ({
     opacity: interpolate(x.value, [20, 80], [0, 1], Extrapolate.CLAMP),
@@ -159,6 +162,8 @@ const SwipeDeck = forwardRef<SwipeDeckRef, Props>(({ candidates, onSwipe, onPres
           sharedCount={c.overlap_count}
           photos={c.profile_photos}
           categories={c.categories}
+          width={cardWidth}
+          height={cardHeight}
         />
       </Animated.View>
     ) : null;
@@ -166,9 +171,6 @@ const SwipeDeck = forwardRef<SwipeDeckRef, Props>(({ candidates, onSwipe, onPres
   const displayCard = swipingCard || top;
   const displayNext = frozenNext || next;
   const displayThird = frozenThird || third;
-
-  const cardWidth = Math.min(width * 0.9, 540);
-  const cardHeight = Math.min(cardWidth * 1.2, 650);
 
   return (
     <View className="flex-1 items-center justify-center">
@@ -198,6 +200,8 @@ const SwipeDeck = forwardRef<SwipeDeckRef, Props>(({ candidates, onSwipe, onPres
                 sharedCount={displayCard.overlap_count}
                 photos={displayCard.profile_photos}
                 categories={displayCard.categories}
+                width={cardWidth}
+                height={cardHeight}
               />
             </Animated.View>
           </GestureDetector>

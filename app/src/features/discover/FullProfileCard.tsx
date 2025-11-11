@@ -20,6 +20,8 @@ type Props = {
   sharedCount: number;
   photos?: ProfilePhoto[];
   categories?: CandidateCategory[];
+  width?: number;
+  height?: number;
 };
 
 export default function FullProfileCard({
@@ -32,6 +34,8 @@ export default function FullProfileCard({
   sharedCount,
   photos = [],
   categories = [],
+  width,
+  height,
 }: Props) {
   const [currentPhotoIndex, setCurrentPhotoIndex] = React.useState(0);
   const online = isOnline(lastActive);
@@ -56,7 +60,7 @@ export default function FullProfileCard({
   return (
     <View 
       className="rounded-3xl overflow-hidden bg-zinc-900/60 border border-white/10" 
-      style={[{ width: '100%', height: '100%' }, cardShadow()]}
+      style={[width && height ? { width, height } : { width: '100%', height: '100%' }, cardShadow()]}
     >
       {/* Photo carousel or single photo */}
       {displayPhotos.length > 0 ? (
