@@ -55,8 +55,8 @@ export default function FullProfileCard({
 
   return (
     <View 
-      className="flex-1 rounded-3xl overflow-hidden bg-zinc-900/60 border border-white/10" 
-      style={cardShadow()}
+      className="rounded-3xl overflow-hidden bg-zinc-900/60 border border-white/10" 
+      style={[{ width: '100%', height: '100%' }, cardShadow()]}
     >
       {/* Photo carousel or single photo */}
       {displayPhotos.length > 0 ? (
