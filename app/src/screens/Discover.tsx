@@ -9,6 +9,7 @@ import { MenuSheet } from '../components/MenuSheet';
 import InlineToast from '../components/InlineToast';
 import CardSkeleton from '../components/CardSkeleton';
 import ReportModal from '../components/ReportModal';
+import EmptyState from '../components/EmptyState';
 import { useDeckPager } from '../features/discover/useDeckPager';
 import { DiscoveryPrefs, DiscoveryPrefsRepository } from '../features/discover/DiscoveryPrefsRepository';
 import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
@@ -243,23 +244,13 @@ export default function Discover() {
           {pager.loading && cards.length === 0 ? (
             <CardSkeleton />
           ) : cards.length === 0 ? (
-            <View className="items-center gap-3">
-              <Text className="text-zinc-200 text-base">You're all caught up</Text>
-              <View className="flex-row gap-2 mt-1">
-                <Pressable
-                  onPress={pager.refresh}
-                  className="px-3 py-2 rounded-xl bg-white/10 border border-white/10"
-                >
-                  <Text className="text-zinc-100">Reload</Text>
-                </Pressable>
-                <Pressable
-                  onPress={() => nav.navigate('DiscoverySettings')}
-                  className="px-3 py-2 rounded-xl bg-white/10 border border-white/10"
-                >
-                  <Text className="text-zinc-100">Edit preferences</Text>
-                </Pressable>
-              </View>
-            </View>
+            <EmptyState
+              icon="sparkles-outline"
+              title="You're all caught up"
+              subtitle="We'll show more people as they become available. Try refreshing later or adjust your preferences."
+              actionLabel="Refresh"
+              onAction={pager.refresh}
+            />
           ) : (
             <SwipeDeck ref={deckRef} candidates={cards} onSwipe={handleSwipe} onPress={openProfile} />
           )}

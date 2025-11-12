@@ -96,6 +96,18 @@ export default function SettingsScreen() {
           </View>
         </View>
 
+        {/* Help & Support */}
+        <View className="px-4 py-4 gap-3">
+          <Text className="text-zinc-400 text-xs uppercase">Help & Support</Text>
+          <TouchableOpacity 
+            className="flex-row items-center justify-between bg-zinc-900 rounded-2xl px-4 py-3"
+            onPress={() => nav.navigate('Help' as never)}
+          >
+            <Text className="text-zinc-100">Help & Support</Text>
+            <Ionicons name="chevron-forward" size={18} color="#a1a1aa" />
+          </TouchableOpacity>
+        </View>
+
         {/* Legal */}
         <View className="px-4 py-4 gap-3">
           <Text className="text-zinc-400 text-xs uppercase">Legal</Text>

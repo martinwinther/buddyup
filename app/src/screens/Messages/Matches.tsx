@@ -8,6 +8,7 @@ import { fetchInbox, markThreadRead, type InboxThread } from '../../lib/chat';
 import { supabase } from '../../lib/supabase';
 import { useLikes } from '../../hooks/useLikes';
 import LikeListItem from '../../components/LikeListItem';
+import EmptyState from '../../components/EmptyState';
 import { useBlocks } from '../../hooks/useBlocks';
 
 type FilterTab = 'all' | 'messages' | 'likes';
@@ -231,14 +232,11 @@ export default function Matches() {
           </Pressable>
         </View>
       ) : displayedThreads.length === 0 && displayedLikes.length === 0 ? (
-        <View className="flex-1 items-center justify-center px-6">
-          <Text className="text-zinc-400 text-center">
-            {searchQuery ? 'No conversations found.' : tab === 'likes' ? 'No likes yet' : 'No matches yet'}
-          </Text>
-          {!searchQuery && (
-            <Text className="text-zinc-500 text-center mt-1">Swipe right to connect</Text>
-          )}
-        </View>
+        <EmptyState
+          icon="chatbubbles-outline"
+          title={searchQuery ? 'No conversations found' : tab === 'likes' ? 'No likes yet' : 'No conversations yet'}
+          subtitle={searchQuery ? undefined : 'Like someone and start the conversation. You can message even if they haven\'t liked you back.'}
+        />
       ) : (
         <FlatList
           data={[...displayedThreads, ...displayedLikes]}

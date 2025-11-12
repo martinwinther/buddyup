@@ -2,6 +2,7 @@ import * as React from 'react';
 import { View, Text, TextInput, FlatList, Pressable, RefreshControl } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import Segmented from '../../components/Segmented';
+import EmptyState from '../../components/EmptyState';
 import { Image } from 'expo-image';
 import { formatRelativeTime, isOnline } from '../../lib/time';
 import { fetchLikedYou, fetchYouLiked, likeUser, type LikeRow, LikesRepository } from '../../features/likes/LikesRepository';
@@ -145,12 +146,11 @@ export default function Likes() {
       {loading ? (
         <View>{Array.from({ length: 8 }).map((_, i) => <Skeleton key={i} />)}</View>
       ) : filtered.length === 0 ? (
-        <View className="flex-1 items-center justify-center px-10">
-          <Ionicons name="heart-circle-outline" size={40} color="#6B7280" />
-          <Text className="text-zinc-400 mt-3 text-center">
-            {mode === 'likedYou' ? 'No one has liked you yet.' : 'You haven’t liked anyone yet.'}
-          </Text>
-        </View>
+        <EmptyState
+          icon="heart-outline"
+          title={mode === 'likedYou' ? 'No one has liked you yet' : 'You haven\'t liked anyone yet'}
+          subtitle={mode === 'likedYou' ? 'Keep swiping! Explore people with shared interests to connect faster.' : 'Explore and like people with shared interests to connect faster.'}
+        />
       ) : (
         <FlatList
           data={filtered}

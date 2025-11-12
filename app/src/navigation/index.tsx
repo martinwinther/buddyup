@@ -32,6 +32,8 @@ import DiscoverySettings from '../screens/Discover/DiscoverySettings';
 import LikedYou from '../screens/Discover/LikedYou';
 import PrivacyScreen from '../screens/Legal/Privacy';
 import TermsScreen from '../screens/Legal/Terms';
+import HelpScreen from '../screens/Support/Help';
+import GuidelinesScreen from '../screens/Support/Guidelines';
 
 const AuthStack = createNativeStackNavigator<RootStackParamList>();
 const OnboardingStack = createNativeStackNavigator<RootStackParamList>();
@@ -185,6 +187,8 @@ function MainStackNavigator() {
       <MainStack.Screen name="LikedYou" component={LikedYou} options={{ headerShown: false }} />
       <MainStack.Screen name="Privacy" component={PrivacyScreen} options={{ title: 'Privacy & Safety' }} />
       <MainStack.Screen name="Terms" component={TermsScreen} options={{ title: 'Terms of Service' }} />
+      <MainStack.Screen name="Help" component={HelpScreen} options={{ title: 'Help & Support' }} />
+      <MainStack.Screen name="Guidelines" component={GuidelinesScreen} options={{ title: 'Community Guidelines' }} />
     </MainStack.Navigator>
   );
 }
