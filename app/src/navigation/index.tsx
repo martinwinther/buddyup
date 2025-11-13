@@ -34,6 +34,7 @@ import PrivacyScreen from '../screens/Legal/Privacy';
 import TermsScreen from '../screens/Legal/Terms';
 import HelpScreen from '../screens/Support/Help';
 import GuidelinesScreen from '../screens/Support/Guidelines';
+import AdminHome from '../screens/Admin/AdminHome';
 
 const AuthStack = createNativeStackNavigator<RootStackParamList>();
 const OnboardingStack = createNativeStackNavigator<RootStackParamList>();
@@ -189,6 +190,7 @@ function MainStackNavigator() {
       <MainStack.Screen name="Terms" component={TermsScreen} options={{ title: 'Terms of Service' }} />
       <MainStack.Screen name="Help" component={HelpScreen} options={{ title: 'Help & Support' }} />
       <MainStack.Screen name="Guidelines" component={GuidelinesScreen} options={{ title: 'Community Guidelines' }} />
+      <MainStack.Screen name="Admin" component={AdminHome} options={{ title: 'Admin' }} />
     </MainStack.Navigator>
   );
 }
