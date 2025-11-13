@@ -4,6 +4,7 @@ import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../lib/supabase';
 import { loadMyProfile, updateNotifyEmail, invokeDeleteAccount } from '../../lib/account';
+import { adminWhoAmI } from '../../lib/admin';
 
 export default function SettingsScreen() {
   const nav = useNavigation();
@@ -12,6 +13,7 @@ export default function SettingsScreen() {
   const [saving, setSaving] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     let dead = false;
@@ -19,6 +21,12 @@ export default function SettingsScreen() {
       try {
         const me = await loadMyProfile();
         if (!dead && me) setNotifyEmail(!!me.notify_email_messages);
+        
+        // Check admin status
+        try {
+          const admin = await adminWhoAmI();
+          if (!dead) setIsAdmin(admin);
+        } catch (_) {}
       } catch (_) {}
       if (!dead) setLoading(false);
     })();
@@ -95,6 +103,23 @@ export default function SettingsScreen() {
             />
           </View>
         </View>
+
+        {/* Admin (only visible to admins) */}
+        {isAdmin && (
+          <View className="px-4 py-4 gap-3">
+            <Text className="text-zinc-400 text-xs uppercase">Admin</Text>
+            <TouchableOpacity 
+              className="flex-row items-center justify-between bg-zinc-900 rounded-2xl px-4 py-3"
+              onPress={() => nav.navigate('Admin' as never)}
+            >
+              <View className="flex-row items-center gap-2">
+                <Ionicons name="shield-checkmark" size={18} color="#a1a1aa" />
+                <Text className="text-zinc-100">Admin Panel</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color="#a1a1aa" />
+            </TouchableOpacity>
+          </View>
+        )}
 
         {/* Help & Support */}
         <View className="px-4 py-4 gap-3">
