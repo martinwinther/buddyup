@@ -53,18 +53,17 @@ const SwipeDeck = forwardRef<SwipeDeckRef, Props>(({ candidates, onSwipe, onPres
   // Clear frozen states when the candidates array actually changes
   React.useEffect(() => {
     if (swipingCard && swipingCard.id !== top?.id) {
-      // Animate position back to center first, then clear frozen states after animation
-      x.value = withTiming(0, { duration: 150 }, (finished) => {
-        if (finished) {
-          runOnJS(setSwipingCard)(null);
-          runOnJS(setFrozenNext)(null);
-          runOnJS(setFrozenThird)(null);
-          runOnJS(setIsAnimating)(false);
-        }
-      });
-      y.value = withTiming(0, { duration: 150 });
-      rot.value = withTiming(0, { duration: 150 });
+      // Instantly reset values since card is already off-screen
+      x.value = 0;
+      y.value = 0;
+      rot.value = 0;
       dragging.value = false;
+      
+      // Clear frozen states immediately
+      setSwipingCard(null);
+      setFrozenNext(null);
+      setFrozenThird(null);
+      setIsAnimating(false);
     }
   }, [top?.id, swipingCard, x, y, rot, dragging]);
 
