@@ -1,6 +1,6 @@
 # BuddyUp
 
-A modern React Native friend-finding app built with TypeScript, featuring intelligent matching algorithms, real-time messaging, and comprehensive safety features.
+A modern React Native friend-finding app built with TypeScript, featuring intelligent matching algorithms, real-time messaging, and safety features.
 
 ## Overview
 
