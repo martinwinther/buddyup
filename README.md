@@ -4,7 +4,7 @@ A React Native friend-finding app built with TypeScript, featuring intelligent m
 
 ## Overview
 
-BuddyUp is a full-stack mobile application designed to help men find meaningful friendships based on shared interests and preferences. The app features a sophisticated matching system, real-time chat functionality, and robust safety mechanisms including blocking and reporting capabilities.
+BuddyUp is a mobile application designed to help men find meaningful friendships based on shared interests and preferences. The app features a sophisticated matching system, real-time chat functionality, and robust safety mechanisms including blocking and reporting capabilities.
 
 ## Tech Stack
 
